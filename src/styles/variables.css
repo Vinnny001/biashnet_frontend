@@ -1,0 +1,11 @@
+:root {
+  --gb-bg: #000000;
+  --gb-card: #0a0a0a;
+  --gb-card-elevated: #111111;
+  --gb-border: #222222;
+  --gb-gold: #f4b400;
+  --gb-gold-light: #ffd54f;
+  --gb-text: #ffffff;
+  --gb-text-secondary: #cccccc;
+  --gb-text-muted: #888888;
+}
