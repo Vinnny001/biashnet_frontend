@@ -1,29 +1,87 @@
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Alert, Box, Stack, Typography } from "@mui/material";
-import { useState } from "react";
 import Card from "../../components/common/Card";
 import LoginForm from "../../components/forms/LoginForm";
 import { useAuth } from "../../hooks/useAuth";
 import { getErrorMessage } from "../../utils/errors";
 
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
+
+async function postJson(path, body) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json();
+  if (!response.ok || data.success === false) {
+    const error = new Error(data.message || "Request failed.");
+    error.response = { data };
+    throw error;
+  }
+  return data;
+}
+
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { completeLogin } = useAuth(); // see note below
+  const [step, setStep] = useState("email");
+  const [email, setEmail] = useState("");
+  const [accountTypes, setAccountTypes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSubmit(values) {
+  async function handleCheckEmail(value) {
     try {
       setLoading(true);
       setError("");
-      await login(values);
-      navigate(location.state?.from?.pathname || "/", { replace: true });
+      const result = await postJson("/auth/login/check-email", { email: value });
+      if (!result.exists || result.accountTypes.length === 0) {
+        setError("No account found for that email.");
+        return;
+      }
+      setEmail(value);
+      setAccountTypes(result.accountTypes);
+      setStep("credentials");
+    } catch (err) {
+      setError(getErrorMessage(err, "Couldn't check that email."));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleLogin({ password, accountType }) {
+    try {
+      setLoading(true);
+      setError("");
+      await postJson("/auth/login/initiate", { email, password, accountType });
+      setStep("otp");
     } catch (err) {
       setError(getErrorMessage(err, "Login failed."));
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleVerifyOtp(code) {
+    try {
+      setLoading(true);
+      setError("");
+      const session = await postJson("/auth/login/verify-otp", { email, code });
+      completeLogin?.(session);
+      navigate(location.state?.from?.pathname || "/", { replace: true });
+    } catch (err) {
+      setError(getErrorMessage(err, "Verification failed."));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleBack() {
+    setError("");
+    setStep((current) => (current === "otp" ? "credentials" : "email"));
   }
 
   return (
@@ -32,7 +90,15 @@ export default function Login() {
         <Stack spacing={2}>
           <Typography variant="h4">Login</Typography>
           {error ? <Alert severity="error">{error}</Alert> : null}
-          <LoginForm onSubmit={handleSubmit} loading={loading} />
+          <LoginForm
+            step={step}
+            accountTypes={accountTypes}
+            loading={loading}
+            onCheckEmail={handleCheckEmail}
+            onLogin={handleLogin}
+            onVerifyOtp={handleVerifyOtp}
+            onBack={handleBack}
+          />
           <Typography color="text.secondary">
             New here? <Link to="/signup">Create an account</Link>
           </Typography>
