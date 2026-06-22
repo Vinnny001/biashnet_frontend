@@ -50,11 +50,13 @@ import SellerOrders from "../pages/seller/SellerOrders";
 import SellerSettings from "../pages/seller/Settings";
 import SharedProfile from "../pages/shared/Profile";
 import SharedSettings from "../pages/shared/Settings";
+import RoleRedirect from "./RoleRedirect";
 
 export default function AppRoutes() {
   return (
     <Routes>
       <Route element={<GuestLayout />}>
+        <Route index element={<RoleRedirect />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -68,7 +70,8 @@ export default function AppRoutes() {
       </Route>
 
       <Route element={<BuyerLayout />}>
-        <Route index element={<Home />} />
+        
+        
         <Route path="/products" element={<Products />} />
         <Route path="/products/:id" element={<ProductDetails />} />
         <Route path="/search" element={<SearchResults />} />
@@ -78,6 +81,7 @@ export default function AppRoutes() {
 
       <Route element={<ProtectedRoute />}>
         <Route element={<BuyerLayout />}>
+          <Route path="/home" element={<Home />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/orders" element={<BuyerOrders />} />
           <Route path="/orders/:id" element={<OrderTracking />} />
