@@ -8,6 +8,13 @@ import { getErrorMessage } from "../../utils/errors";
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
+const ROLE_HOME = {
+  admin: "/admin/dashboard",
+  seller: "/seller/dashboard",
+  investor: "/",
+  buyer: "/"
+};
+
 async function postJson(path, body) {
   const response = await fetch(`${API_BASE}${path}`, {
     method: "POST",
@@ -32,6 +39,8 @@ export default function Login() {
   const [accountTypes, setAccountTypes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  
 
   async function handleCheckEmail(value) {
     try {
@@ -66,18 +75,19 @@ export default function Login() {
   }
 
   async function handleVerifyOtp(code) {
-    try {
-      setLoading(true);
-      setError("");
-      const session = await postJson("/auth/login/verify-otp", { email, code });
-      completeLogin?.(session);
-      navigate(location.state?.from?.pathname || "/", { replace: true });
-    } catch (err) {
-      setError(getErrorMessage(err, "Verification failed."));
-    } finally {
-      setLoading(false);
-    }
+  try {
+    setLoading(true);
+    setError("");
+    const session = await postJson("/auth/login/verify-otp", { email, code });
+    await completeLogin(session); // or completeLogin — see point 2 below
+    const destination = location.state?.from?.pathname || ROLE_HOME[session.user?.role] || "/";
+    navigate(destination, { replace: true });
+  } catch (err) {
+    setError(getErrorMessage(err, "Verification failed."));
+  } finally {
+    setLoading(false);
   }
+}
 
   function handleBack() {
     setError("");

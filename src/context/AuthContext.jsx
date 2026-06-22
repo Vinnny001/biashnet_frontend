@@ -79,6 +79,14 @@ export function AuthProvider({ children }) {
     [persistSession]
   );
 
+  const completeLogin = useCallback(
+  (session) => {
+    const { token, user } = extractAuthPayload(session);
+    persistSession(token, user);
+  },
+  [persistSession]
+);
+
   const signup = useCallback(
     async (values) => {
       setError("");
@@ -121,9 +129,10 @@ export function AuthProvider({ children }) {
       signup,
       logout,
       refreshUser,
-      setUser
+      setUser,
+      completeLogin
     }),
-    [error, loading, login, logout, refreshUser, signup, token, user]
+    [error, loading, login, logout, refreshUser, signup, token, user, completeLogin]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
