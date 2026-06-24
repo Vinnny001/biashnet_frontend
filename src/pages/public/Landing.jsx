@@ -6,7 +6,7 @@ import HomeWorkIcon from "@mui/icons-material/HomeWork";
 import MiscellaneousServicesIcon from "@mui/icons-material/MiscellaneousServices";
 import CampaignIcon from "@mui/icons-material/Campaign";
 
-const CYCLING_WORDS = ["food", "clothes", "electronics", "utensils", "housing", "everything..."];
+const CYCLING_WORDS = ["food", "clothes", "electronics", "books", "utensils", "housing", "everything..."];
 
 function AnimatedWord() {
   const [index, setIndex] = useState(0);
