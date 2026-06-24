@@ -9,17 +9,21 @@ import {
   Toolbar,
   Typography
 } from "@mui/material";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { APP_NAME } from "../../utils/constants";
 import { useAuth } from "../../hooks/useAuth";
 import { useCart } from "../../hooks/useCart";
 import Navbar from "./Navbar";
 
+const NAVBAR_PATHS = ["/", "/home"];
+
 export default function Header({ onMenu }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { count } = useCart();
   const { isAuthenticated, logout, user } = useAuth();
 
+  const showExtras = NAVBAR_PATHS.includes(location.pathname);
   return (
     <AppBar
       position="sticky"
@@ -41,12 +45,14 @@ export default function Header({ onMenu }) {
         >
           {APP_NAME}
         </Typography>
-        <Navbar />
-        <IconButton component={Link} to="/cart" aria-label="Open cart">
-          <Badge badgeContent={count} color="primary">
-            <ShoppingCartIcon />
-          </Badge>
-        </IconButton>
+        {showExtras ? <Navbar /> : null}
+        {showExtras ? (
+  <IconButton component={Link} to="/cart" aria-label="Open cart">
+    <Badge badgeContent={count} color="primary">
+      <ShoppingCartIcon />
+    </Badge>
+  </IconButton>
+) : null}
         {isAuthenticated ? (
           <Button color="primary" variant="outlined" onClick={logout}>
             Logout

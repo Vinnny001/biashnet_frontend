@@ -1,9 +1,46 @@
+import { useEffect, useState } from "react";
 import { Box, Button, Card, CardContent, Grid, Stack, Typography } from "@mui/material";
 import { Link } from "react-router-dom";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import HomeWorkIcon from "@mui/icons-material/HomeWork";
 import MiscellaneousServicesIcon from "@mui/icons-material/MiscellaneousServices";
 import CampaignIcon from "@mui/icons-material/Campaign";
+
+const CYCLING_WORDS = ["food", "clothes", "electronics", "utensils", "housing", "everything..."];
+
+function AnimatedWord() {
+  const [index, setIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    if (index === CYCLING_WORDS.length - 1) return;
+    const pause = setTimeout(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIndex((i) => i + 1);
+        setVisible(true);
+      }, 300);
+    }, 1200);
+    return () => clearTimeout(pause);
+  }, [index]);
+
+  return (
+    <Box
+      component="span"
+      sx={{
+        color: "rgba(255,255,255,0.75)",
+        borderBottom: "3px solid rgba(255,255,255,0.5)",
+        pb: "2px",
+        display: "inline-block",
+        minWidth: 180,
+        transition: "opacity 0.3s ease",
+        opacity: visible ? 1 : 0
+      }}
+    >
+      {CYCLING_WORDS[index]}
+    </Box>
+  );
+}
 
 const categories = [
   { label: "Products", description: "Buy and sell physical goods", icon: StorefrontIcon, to: "/products?category=products" },
@@ -39,7 +76,8 @@ export default function Landing() {
             variant="h2"
             sx={{ fontWeight: 800, color: "#fff", lineHeight: 1.15 }}
           >
-            Juja's marketplace for everything
+            Juja's marketplace for{" "}
+            <AnimatedWord />
           </Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.85)", fontSize: "1.1rem" }}>
             Buy products, hire services, find housing, and post adverts — all in one place with verified sellers.
