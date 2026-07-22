@@ -10,7 +10,7 @@ export default function ProductCard({ product }) {
 
   return (
     <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <ProductImage src={product.image || product.imageUrl || product.images?.[0]} alt={product.name} />
+      <ProductImage src={product.image || product.imageUrl || product.images?.[0]?.thumb || product.images?.[0]?.full} alt={product.name} />
       <CardContent sx={{ flex: 1 }}>
         <Stack spacing={1}>
           <Typography variant="h6">{product.name || product.title || "Untitled product"}</Typography>
