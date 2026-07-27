@@ -66,6 +66,8 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false);
     }
+
+
   }, [clearSession]);
 
   const login = useCallback(
@@ -86,7 +88,6 @@ export function AuthProvider({ children }) {
   },
   [persistSession]
 );
-
   const signup = useCallback(
     async (values) => {
       setError("");

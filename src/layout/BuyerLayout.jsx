@@ -23,7 +23,7 @@ import { useCart } from "../hooks/useCart";
 const GOLD = "#d4af37";
 
 const NAV_ITEMS = [
-  { label: "Home",     to: "/home",     icon: HomeIcon },
+  { label: "Home",     to: "/buyer/home",     icon: HomeIcon },
   { label: "Products", to: "/products", icon: StoreIcon },
   { label: "Services", to: "/services", icon: MiscellaneousServicesIcon },
   { label: "Houses",   to: "/houses",   icon: HomeWorkIcon },
@@ -33,7 +33,7 @@ const NAV_ITEMS = [
 function useActiveNav() {
   const { pathname } = useLocation();
   const idx = NAV_ITEMS.findIndex((item) =>
-    item.to === "/home" ? pathname === "/home" : pathname.startsWith(item.to)
+    item.to === "/buyer/home" ? pathname === "/buyer/home" : pathname.startsWith(item.to)
   );
   return idx;
 }
@@ -62,7 +62,7 @@ export default function BuyerLayout() {
           {/* Brand */}
           <Typography
             component={Link}
-            to="/home"
+            to="/buyer/home"
             variant="h5"
             sx={{ color: "primary.main", fontWeight: 800, textDecoration: "none", flexShrink: 0 }}
           >

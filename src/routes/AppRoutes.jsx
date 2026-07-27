@@ -70,8 +70,7 @@ export default function AppRoutes() {
       </Route>
 
       <Route element={<BuyerLayout />}>
-        
-        
+              
         <Route path="/products" element={<Products />} />
         <Route path="/products/:id" element={<ProductDetails />} />
         <Route path="/search" element={<SearchResults />} />
@@ -79,9 +78,9 @@ export default function AppRoutes() {
         <Route path="/wishlist" element={<Wishlist />} />
       </Route>
 
-      <Route element={<ProtectedRoute />}>
+      <Route element={<RoleRoute allow={["buyer"]} />}>
         <Route element={<BuyerLayout />}>
-          <Route path="/home" element={<Home />} />
+          <Route path="/buyer/home" element={<Home />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/orders" element={<BuyerOrders />} />
           <Route path="/orders/:id" element={<OrderTracking />} />

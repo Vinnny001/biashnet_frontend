@@ -6,14 +6,11 @@ import LoginForm from "../../components/forms/LoginForm";
 import { useAuth } from "../../hooks/useAuth";
 import { getErrorMessage } from "../../utils/errors";
 
+import { ROLE_HOME } from "../../utils/roleRoutes";
+
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
-const ROLE_HOME = {
-  admin: "/admin/dashboard",
-  seller: "/seller/dashboard",
-  investor: "/",
-  buyer: "/"
-};
+
 
 async function postJson(path, body) {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -80,7 +77,7 @@ export default function Login() {
     setError("");
     const session = await postJson("/auth/login/verify-otp", { email, code });
     await completeLogin(session); // or completeLogin — see point 2 below
-    const destination = location.state?.from?.pathname || ROLE_HOME[session.user?.role] || "/";
+    const destination = ROLE_HOME[session.user?.role] || "/";
     navigate(destination, { replace: true });
   } catch (err) {
     setError(getErrorMessage(err, "Verification failed."));

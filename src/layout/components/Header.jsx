@@ -15,7 +15,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { useCart } from "../../hooks/useCart";
 import Navbar from "./Navbar";
 
-const NAVBAR_PATHS = ["/", "/home", "/login"];
+const NAVBAR_PATHS = ["/", "/home", "/login", "/buyer/home"];
 
 export default function Header({ onMenu }) {
   const navigate = useNavigate();

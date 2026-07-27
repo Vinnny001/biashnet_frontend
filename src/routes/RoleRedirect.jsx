@@ -3,12 +3,8 @@ import { useAuth } from "../hooks/useAuth";
 import Landing from "../pages/public/Landing";
 import Loading from "../components/common/Loading";
 
-const ROLE_HOME = {
-  admin: "/admin/dashboard",
-  seller: "/seller/dashboard",
-  investor: "/home",   // investors stay on buyer home for now — update when you have an investor portal
-  buyer: "/home"
-};
+import { ROLE_HOME } from "../utils/roleRoutes";
+
 
 export default function RoleRedirect() {
   const { isAuthenticated, user, loading } = useAuth();
