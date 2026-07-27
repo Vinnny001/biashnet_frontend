@@ -99,7 +99,7 @@ export default function Landing() {
               size="large"
               sx={{ borderColor: "rgba(255,255,255,0.6)", color: "#fff", "&:hover": { borderColor: "#fff", bgcolor: "rgba(255,255,255,0.1)" } }}
             >
-              Sign in
+              Login
             </Button>
           </Stack>
         </Stack>

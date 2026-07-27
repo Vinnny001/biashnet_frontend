@@ -10,7 +10,7 @@ export const productService = {
   },
 
   create(payload) {
-    return api.post("/products", payload);
+    return api.post("/image", payload);
   },
 
   update(id, payload) {
