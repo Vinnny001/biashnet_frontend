@@ -1,21 +1,57 @@
 import { Box } from "@mui/material";
+import ImageIcon from "@mui/icons-material/ImageNotSupported";
 
-export default function ProductImage({ src, alt = "Product image" }) {
+const IMAGE_SIZE = 180; // adjust to taste — same value used for width & height
+
+export default function ProductImage({
+  src,
+  alt = "Product image",
+  size = IMAGE_SIZE,
+}) {
   return (
     <Box
       sx={{
-        aspectRatio: "4 / 3",
+        width: size,
+        height: size,
+        flexShrink: 0,
         bgcolor: "background.paper",
-        borderBottom: "1px solid",
+        border: "1px solid",
         borderColor: "divider",
-        overflow: "hidden"
+        borderRadius: 2,
+        overflow: "hidden",
       }}
     >
       {src ? (
-        <Box component="img" src={src} alt={alt} sx={{ height: "100%", width: "100%" }} />
+        <Box
+          component="img"
+          src={src}
+          alt={alt}
+          loading="lazy"
+          sx={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
+          }}
+        />
       ) : (
-        <Box className="image-placeholder" sx={{ height: "100%" }}>
-          No image
+        <Box
+          sx={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 0.5,
+            color: "text.secondary",
+            bgcolor: "grey.100",
+          }}
+        >
+          <ImageIcon fontSize="small" />
+          <Box component="span" sx={{ fontSize: 12 }}>
+            No image
+          </Box>
         </Box>
       )}
     </Box>
