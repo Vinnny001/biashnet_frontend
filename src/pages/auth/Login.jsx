@@ -5,15 +5,15 @@ import Card from "../../components/common/Card";
 import LoginForm from "../../components/forms/LoginForm";
 import { useAuth } from "../../hooks/useAuth";
 import { getErrorMessage } from "../../utils/errors";
+import { API_BASE_URL } from "../../utils/constants";
+
 
 import { ROLE_HOME } from "../../utils/roleRoutes";
-
-const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
 
 
 async function postJson(path, body) {
-  const response = await fetch(`${API_BASE}${path}`, {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)

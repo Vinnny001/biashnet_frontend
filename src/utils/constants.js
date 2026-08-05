@@ -1,7 +1,12 @@
-export const APP_NAME = import.meta.env.VITE_APP_NAME || "Biashnet";
-export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+export const APP_NAME = import.meta.env.VITE_APP_NAME || "App name";
+const APP_ENV = import.meta.env.VITE_APP_ENV || "dev_mode";
 
+const API_URLS = {
+  development: "http://localhost:5000/api",
+  production: "https://biashnet-backend.onrender.com/api",
+};
+
+export const API_BASE_URL = API_URLS[APP_ENV] || API_URLS.production;
 export const USER_ROLES = {
   ADMIN: "admin",
   SELLER: "seller",
