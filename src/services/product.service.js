@@ -23,5 +23,9 @@ export const productService = {
 
   reviews(id) {
     return api.get(`/products/${id}/reviews`);
-  }
+  },
+
+  trackView(id) {          // <-- add if missing
+    return api.post(`/products/${id}/view`);
+  },
 };

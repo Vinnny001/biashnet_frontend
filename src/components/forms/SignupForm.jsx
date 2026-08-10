@@ -3,12 +3,14 @@ import { useState } from "react";
 import Input from "../common/Input";
 
 export default function SignupForm({ onSubmit, loading = false }) {
-  const [accountType, setAccountType] = useState("individual");
+  const [userType, setUserType] = useState("individual");
   const [values, setValues] = useState({
     firstName: "",
     surname: "",
     businessName: "",
     email: "",
+    phone: "",
+    location: "",
     password: "",
     confirmPassword: "",
     role: "buyer"
@@ -19,11 +21,9 @@ export default function SignupForm({ onSubmit, loading = false }) {
     return (event) => setValues((current) => ({ ...current, [field]: event.target.value }));
   }
 
-  function handleAccountTypeChange(event, nextType) {
-    // ToggleButtonGroup fires with null if you click the already-selected button;
-    // ignore that so the toggle can't be deselected entirely
+  function handleUserTypeChange(event, nextType) {
     if (nextType !== null) {
-      setAccountType(nextType);
+      setUserType(nextType);
     }
   }
 
@@ -37,13 +37,14 @@ export default function SignupForm({ onSubmit, loading = false }) {
     setPasswordError("");
 
     const payload = {
-      accountType,
+      userType,
       email: values.email,
+      phone: values.phone,
       password: values.password,
       role: values.role,
-      ...(accountType === "individual"
+      ...(userType === "individual"
         ? { firstName: values.firstName, surname: values.surname }
-        : { businessName: values.businessName })
+        : { businessName: values.businessName, location: values.location })
     };
 
     onSubmit?.(payload);
@@ -55,29 +56,47 @@ export default function SignupForm({ onSubmit, loading = false }) {
         color="primary"
         exclusive
         fullWidth
-        value={accountType}
-        onChange={handleAccountTypeChange}
+        value={userType}
+        onChange={handleUserTypeChange}
         sx={{ mb: 1 }}
       >
         <ToggleButton value="individual">Individual</ToggleButton>
         <ToggleButton value="business">Business</ToggleButton>
       </ToggleButtonGroup>
 
-      {accountType === "individual" ? (
+      {userType === "individual" ? (
         <>
           <Input label="First Name" value={values.firstName} onChange={update("firstName")} required />
           <Input label="Surname" value={values.surname} onChange={update("surname")} required />
         </>
       ) : (
-        <Input
-          label="Business Name"
-          value={values.businessName}
-          onChange={update("businessName")}
-          required
-        />
+        <>
+          <Input
+            label="Business Name"
+            value={values.businessName}
+            onChange={update("businessName")}
+            required
+          />
+          <Input
+            label="Location"
+            value={values.location}
+            onChange={update("location")}
+            required
+          />
+        </>
       )}
 
       <Input label="Email" type="email" value={values.email} onChange={update("email")} required />
+      <Input
+  label="Phone"
+  type="tel"
+  value={values.phone}
+  onChange={(event) => {
+    const value = event.target.value.replace(/\D/g, "");
+    setValues((current) => ({ ...current, phone: value }));
+  }}
+  required
+/>
       <Input
         label="Password"
         type="password"
@@ -97,7 +116,6 @@ export default function SignupForm({ onSubmit, loading = false }) {
       <Input select label="Role" value={values.role} onChange={update("role")}>
         <MenuItem value="buyer">Buyer</MenuItem>
         <MenuItem value="seller">Seller</MenuItem>
-        <MenuItem value="investor">Investor</MenuItem>
       </Input>
       <Button disabled={loading} type="submit" variant="contained">
         {loading ? "Creating account..." : "Create account"}

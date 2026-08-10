@@ -59,17 +59,25 @@ export default function Login() {
   }
 
   async function handleLogin({ password, accountType }) {
-    try {
-      setLoading(true);
-      setError("");
-      await postJson("/auth/login/initiate", { email, password, accountType });
-      setStep("otp");
-    } catch (err) {
-      setError(getErrorMessage(err, "Login failed."));
-    } finally {
-      setLoading(false);
+  try {
+    setLoading(true);
+    setError("");
+    const result = await postJson("/auth/login/initiate", { email, password, accountType });
+
+    if (result.skipOtp) {
+      await completeLogin(result);
+      const destination = ROLE_HOME[result.user?.role] || "/";
+      navigate(destination, { replace: true });
+      return;
     }
+
+    setStep("otp");
+  } catch (err) {
+    setError(getErrorMessage(err, "Login failed."));
+  } finally {
+    setLoading(false);
   }
+}
 
   async function handleVerifyOtp(code) {
   try {
