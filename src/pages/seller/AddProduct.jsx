@@ -8,12 +8,17 @@ import { getErrorMessage } from "../../utils/errors";
 export default function AddProduct() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [formKey, setFormKey] = useState(0);
 
   async function handleSubmit(values) {
     try {
       setError("");
       await productService.create(values);
       setMessage("Product created.");
+
+      // Remount ProductForm with a fresh, empty state
+      setFormKey((key) => key + 1);
+
     } catch (err) {
       setError(getErrorMessage(err));
     }
@@ -24,7 +29,7 @@ export default function AddProduct() {
       <Typography variant="h4">Add product</Typography>
       {message ? <Alert severity="success">{message}</Alert> : null}
       {error ? <Alert severity="error">{error}</Alert> : null}
-      <Card><ProductForm onSubmit={handleSubmit} /></Card>
+      <Card><ProductForm key={formKey} onSubmit={handleSubmit} /></Card>
     </Stack>
   );
 }
