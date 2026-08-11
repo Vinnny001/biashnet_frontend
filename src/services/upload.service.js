@@ -1,19 +1,70 @@
-import api from "./api";
+// src/services/uploadService.js
+
+import { uploadApi } from "./api";
 
 export const uploadService = {
-  uploadImage(file, folder = "biashnet") {
+
+  /*
+  |--------------------------------------------------------------------------
+  | Upload one image
+  |--------------------------------------------------------------------------
+  */
+
+  async uploadImage(file, folder = "biashnet") {
     const formData = new FormData();
+
     formData.append("image", file);
     formData.append("folder", folder);
 
-    return api.post("/upload/image", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data"
-      }
-    });
+    const response = await uploadApi.post(
+      "/upload/image",
+      formData
+    );
+
+    return response.data;
   },
 
-  remove(publicId) {
-    return api.delete("/upload/image", { data: { publicId } });
-  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Upload multiple images
+  |--------------------------------------------------------------------------
+  */
+
+  async uploadImages(files, folder = "biashnet") {
+    const formData = new FormData();
+
+    files.forEach((file) => {
+      formData.append("images", file);
+    });
+
+    formData.append("folder", folder);
+
+    const response = await uploadApi.post(
+      "/upload/images",
+      formData
+    );
+
+    return response.data;
+  },
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Remove image from Cloudinary
+  |--------------------------------------------------------------------------
+  */
+
+  async remove(publicId) {
+    const response = await uploadApi.delete(
+      "/upload/image",
+      {
+        data: {
+          publicId,
+        },
+      }
+    );
+
+    return response.data;
+  },
 };

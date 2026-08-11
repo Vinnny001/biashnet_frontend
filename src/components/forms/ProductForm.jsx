@@ -1,3 +1,5 @@
+// src/components/product/ProductForm.jsx
+
 import {
   Button,
   MenuItem,
@@ -5,12 +7,15 @@ import {
   Divider,
   Typography,
   Box,
+  CircularProgress,
 } from "@mui/material";
 
 import { useState } from "react";
 
 import Input from "../common/Input";
 import ImageUploader from "../product/ImageUploader";
+
+import { uploadService } from "../../services/upload.service";
 
 
 const categories = [
@@ -65,63 +70,61 @@ export default function ProductForm({
   onSubmit,
 }) {
 
-
-  const [images,setImages] = useState(
+  const [images, setImages] = useState(
     initialValues.images || []
   );
 
 
-  const [values,setValues] = useState({
+  const [values, setValues] = useState({
 
     name:
       initialValues.name || "",
 
-
     category:
       initialValues.category || "electronics",
-
 
     subCategory:
       initialValues.subCategory || "",
 
-
     price:
       initialValues.price || "",
-
 
     oldPrice:
       initialValues.oldPrice || "",
 
-
     description:
       initialValues.description || "",
-
 
     location:
       initialValues.location || "",
 
-
     condition:
       initialValues.condition || "New",
 
-
     stock:
-      initialValues.stock || 1,
+      initialValues.stock ?? 1,
 
   });
 
 
+  const [publishing, setPublishing] =
+    useState(false);
 
-  function update(field){
 
-    return(event)=>{
+  const [error, setError] =
+    useState("");
 
-      setValues(current=>({
+
+  function update(field) {
+
+    return (event) => {
+
+      setValues((current) => ({
 
         ...current,
 
         [field]:
-        event.target.value,
+          event.target.value,
 
       }));
 
@@ -130,35 +133,212 @@ export default function ProductForm({
   }
 
 
-
-  function handleSubmit(event){
+  async function handleSubmit(event) {
 
     event.preventDefault();
 
 
-    onSubmit?.({
-
-      ...values,
-
-      images,
-
-      price:Number(values.price),
-
-      oldPrice:
-        values.oldPrice
-        ?
-        Number(values.oldPrice)
-        :
-        null,
+    if (publishing) {
+      return;
+    }
 
 
-      stock:
-        Number(values.stock),
+    setError("");
 
-    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validate product
+    |--------------------------------------------------------------------------
+    */
+
+    if (!values.name.trim()) {
+
+      setError(
+        "Please enter the product name."
+      );
+
+      return;
+    }
+
+
+    if (!values.price) {
+
+      setError(
+        "Please enter the selling price."
+      );
+
+      return;
+    }
+
+
+    if (!images.length) {
+
+      setError(
+        "Please add at least one product image."
+      );
+
+      return;
+    }
+
+
+    setPublishing(true);
+
+
+    try {
+
+      /*
+      |--------------------------------------------------------------------------
+      | Separate new files from existing images
+      |--------------------------------------------------------------------------
+      */
+
+      const newFiles = images
+        .filter(
+          (image) => image?.file
+        )
+        .map(
+          (image) => image.file
+        );
+
+
+      const existingImages = images
+        .filter(
+          (image) => !image?.file
+        );
+
+
+      /*
+      |--------------------------------------------------------------------------
+      | Upload new images
+      |--------------------------------------------------------------------------
+      |
+      | This sends the files to:
+      |
+      | http://localhost:5050/upload/images
+      |
+      | The JWT is automatically attached by uploadApi.
+      |
+      */
+
+      let uploadedImages = [];
+
+
+      if (newFiles.length > 0) {
+
+        const result =
+          await uploadService.uploadImages(
+            newFiles,
+            "biashnet/products"
+          );
+
+
+        uploadedImages =
+          result?.images || [];
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Make sure every selected image uploaded
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+          uploadedImages.length !==
+          newFiles.length
+        ) {
+
+          throw new Error(
+            "One or more images failed to upload."
+          );
+
+        }
+
+      }
+
+
+      /*
+      |--------------------------------------------------------------------------
+      | Combine existing + uploaded images
+      |--------------------------------------------------------------------------
+      */
+
+      const finalImages = [
+
+        ...existingImages,
+
+        ...uploadedImages,
+
+      ];
+
+
+      /*
+      |--------------------------------------------------------------------------
+      | Build final product
+      |--------------------------------------------------------------------------
+      */
+
+      const product = {
+
+        ...values,
+
+        name:
+          values.name.trim(),
+
+        price:
+          Number(values.price),
+
+        oldPrice:
+          values.oldPrice !== "" &&
+          values.oldPrice !== null
+            ? Number(values.oldPrice)
+            : null,
+
+        stock:
+          Number(values.stock),
+
+        images:
+          finalImages,
+
+      };
+
+
+      /*
+      |--------------------------------------------------------------------------
+      | Send product to parent
+      |--------------------------------------------------------------------------
+      |
+      | The parent should use the MAIN Biashnet API here.
+      |
+      */
+
+      await onSubmit?.(product);
+
+
+    } catch (err) {
+
+      console.error(
+        "Product publishing failed:",
+        err
+      );
+
+
+      const message =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to publish product. Please try again.";
+
+
+      setError(message);
+
+    } finally {
+
+      setPublishing(false);
+
+    }
 
   }
-
 
 
   return (
@@ -174,6 +354,32 @@ export default function ProductForm({
     >
 
 
+      {/* ERROR */}
+
+      {error && (
+
+        <Box
+          sx={{
+            p: 1.5,
+            borderRadius: 1,
+            bgcolor: "error.light",
+            color: "error.contrastText",
+          }}
+        >
+
+          <Typography
+            variant="body2"
+            fontWeight={600}
+          >
+            {error}
+          </Typography>
+
+        </Box>
+
+      )}
+
+
+      {/* PRODUCT INFORMATION */}
 
       <Typography
         variant="h6"
@@ -181,7 +387,6 @@ export default function ProductForm({
       >
         Product Information
       </Typography>
-
 
 
       <Input
@@ -197,7 +402,6 @@ export default function ProductForm({
       />
 
 
-
       <Input
 
         select
@@ -210,22 +414,20 @@ export default function ProductForm({
 
       >
 
-        {
-          categories.map(item=>(
+        {categories.map((item) => (
 
-            <MenuItem
-              key={item.value}
-              value={item.value}
-            >
-              {item.label}
-            </MenuItem>
+          <MenuItem
+            key={item.value}
+            value={item.value}
+          >
 
-          ))
-        }
+            {item.label}
 
+          </MenuItem>
+
+        ))}
 
       </Input>
-
 
 
       <Input
@@ -241,11 +443,10 @@ export default function ProductForm({
       />
 
 
-
-      <Divider/>
-
+      <Divider />
 
 
+      {/* PRICING */}
 
       <Typography
         variant="h6"
@@ -253,8 +454,6 @@ export default function ProductForm({
       >
         Pricing
       </Typography>
-
-
 
 
       <Input
@@ -269,8 +468,11 @@ export default function ProductForm({
 
         required
 
-      />
+        inputProps={{
+          min: 0,
+        }}
 
+      />
 
 
       <Input
@@ -283,15 +485,17 @@ export default function ProductForm({
 
         onChange={update("oldPrice")}
 
+        inputProps={{
+          min: 0,
+        }}
+
       />
 
 
+      <Divider />
 
 
-      <Divider/>
-
-
-
+      {/* PRODUCT DETAILS */}
 
       <Typography
         variant="h6"
@@ -299,8 +503,6 @@ export default function ProductForm({
       >
         Product Details
       </Typography>
-
-
 
 
       <Input
@@ -315,23 +517,20 @@ export default function ProductForm({
 
       >
 
-        {
-          conditions.map(condition=>(
+        {conditions.map((condition) => (
 
-            <MenuItem
-              key={condition}
-              value={condition}
-            >
-              {condition}
-            </MenuItem>
+          <MenuItem
+            key={condition}
+            value={condition}
+          >
 
-          ))
-        }
+            {condition}
 
+          </MenuItem>
+
+        ))}
 
       </Input>
-
-
 
 
       <Input
@@ -344,9 +543,11 @@ export default function ProductForm({
 
         onChange={update("stock")}
 
+        inputProps={{
+          min: 1,
+        }}
+
       />
-
-
 
 
       <Input
@@ -360,8 +561,6 @@ export default function ProductForm({
         placeholder="Example: Juja, Nairobi"
 
       />
-
-
 
 
       <Input
@@ -379,12 +578,10 @@ export default function ProductForm({
       />
 
 
+      <Divider />
 
 
-      <Divider/>
-
-
-
+      {/* PRODUCT IMAGES */}
 
       <Typography
         variant="h6"
@@ -394,6 +591,12 @@ export default function ProductForm({
       </Typography>
 
 
+      <Typography
+        variant="body2"
+        color="text.secondary"
+      >
+        Select up to 8 images. Images will be uploaded when you publish.
+      </Typography>
 
 
       <ImageUploader
@@ -405,7 +608,7 @@ export default function ProductForm({
       />
 
 
-
+      {/* PUBLISH */}
 
       <Box>
 
@@ -419,14 +622,36 @@ export default function ProductForm({
 
           fullWidth
 
-          disabled={!images.length}
+          disabled={
+            !images.length ||
+            publishing
+          }
 
         >
 
-          Publish Product
+          {publishing ? (
+
+            <>
+
+              <CircularProgress
+                size={22}
+                color="inherit"
+                sx={{
+                  mr: 1,
+                }}
+              />
+
+              Publishing...
+
+            </>
+
+          ) : (
+
+            "Publish Product"
+
+          )}
 
         </Button>
-
 
       </Box>
 

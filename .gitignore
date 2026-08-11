@@ -32,3 +32,6 @@ Thumbs.db
 
 # Vite cache
 .vite/
+
+# FILES
+src/services/cloudinary.service.js

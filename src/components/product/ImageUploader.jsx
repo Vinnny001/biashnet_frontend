@@ -1,11 +1,12 @@
-import { useRef, useState } from "react";
+// src/components/product/ImageUploader.jsx
+
+import { useEffect, useRef } from "react";
 
 import {
   Box,
   Button,
   Card,
   CardMedia,
-  CircularProgress,
   IconButton,
   Stack,
   Typography,
@@ -14,28 +15,32 @@ import {
 import AddPhotoAlternateRoundedIcon from "@mui/icons-material/AddPhotoAlternateRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 
-import { uploadToCloudinary } from "../../services/cloudinary.service";
-
-
 const MAX_IMAGES = 8;
-
 
 export default function ImageUploader({
   value = [],
   onChange,
 }) {
-
   const inputRef = useRef(null);
 
-  const [uploading, setUploading] = useState(false);
 
+  /*
+  |--------------------------------------------------------------------------
+  | Select images
+  |--------------------------------------------------------------------------
+  |
+  | IMPORTANT:
+  |
+  | We do NOT upload here.
+  |
+  | We only create local previews.
+  |
+  */
 
-  async function handleSelect(event) {
-
+  function handleSelect(event) {
     const files = Array.from(
       event.target.files || []
     );
-
 
     if (!files.length) return;
 
@@ -48,78 +53,84 @@ export default function ImageUploader({
       files.slice(0, remaining);
 
 
-    setUploading(true);
+    const newImages = selectedFiles.map(
+      (file) => ({
+        file,
+
+        preview: URL.createObjectURL(file),
+
+        // Used later to distinguish new images
+        uploaded: false,
+      })
+    );
 
 
-    try {
-
-      const uploadedImages = [];
-
-
-      for (const file of selectedFiles) {
-
-        const result =
-          await uploadToCloudinary(file);
+    onChange([
+      ...value,
+      ...newImages,
+    ]);
 
 
-        if (result) {
-
-          uploadedImages.push(result);
-
-        }
-
-      }
-
-
-      onChange([
-        ...value,
-        ...uploadedImages,
-      ]);
-
-
-    } catch(error){
-
-      console.error(
-        "Image upload failed",
-        error
-      );
-
-    }
-    finally {
-
-      setUploading(false);
-
-      event.target.value = "";
-
-    }
-
+    // Allows selecting the same file again
+    event.target.value = "";
   }
 
 
+  /*
+  |--------------------------------------------------------------------------
+  | Remove image
+  |--------------------------------------------------------------------------
+  */
 
-  function removeImage(index){
+  function removeImage(index) {
+    const image = value[index];
+
+    /*
+    | Free browser memory for local previews.
+    */
+
+    if (
+      image?.preview &&
+      image.preview.startsWith("blob:")
+    ) {
+      URL.revokeObjectURL(image.preview);
+    }
+
 
     const updated = [...value];
 
-    updated.splice(index,1);
+    updated.splice(index, 1);
 
     onChange(updated);
-
   }
 
 
+  /*
+  |--------------------------------------------------------------------------
+  | Cleanup previews
+  |--------------------------------------------------------------------------
+  */
+
+  useEffect(() => {
+    return () => {
+      value.forEach((image) => {
+        if (
+          image?.preview &&
+          image.preview.startsWith("blob:")
+        ) {
+          URL.revokeObjectURL(image.preview);
+        }
+      });
+    };
+  }, []);
+
 
   return (
-
     <Stack spacing={2}>
 
-
-      <Typography
-        fontWeight={700}
-      >
+      <Typography fontWeight={700}>
         Product Images
       </Typography>
-
 
 
       <input
@@ -132,116 +143,88 @@ export default function ImageUploader({
       />
 
 
-
       <Button
         variant="outlined"
         startIcon={
-          <AddPhotoAlternateRoundedIcon/>
+          <AddPhotoAlternateRoundedIcon />
         }
         disabled={
-          uploading ||
           value.length >= MAX_IMAGES
         }
         onClick={() =>
           inputRef.current?.click()
         }
       >
-
-        {uploading
-          ? "Uploading..."
-          : "Add Images"}
-
+        Add Images
       </Button>
-
 
 
       <Typography
         variant="caption"
         color="text.secondary"
       >
-
-        {value.length}/{MAX_IMAGES} images uploaded
-
+        {value.length}/{MAX_IMAGES} images selected
       </Typography>
 
 
+      {value.length > 0 && (
+        <Box
+          sx={{
+            display: "grid",
 
-      {
-        uploading && (
+            gridTemplateColumns: {
+              xs: "repeat(3, 1fr)",
+              sm: "repeat(5, 1fr)",
+            },
 
-          <Box
-            display="flex"
-            justifyContent="center"
-          >
+            gap: 2,
+          }}
+        >
 
-            <CircularProgress size={32}/>
-
-          </Box>
-
-        )
-      }
-
-
-
-
-      <Box
-        sx={{
-          display:"grid",
-
-          gridTemplateColumns:{
-            xs:"repeat(3,1fr)",
-            sm:"repeat(5,1fr)",
-          },
-
-          gap:2,
-        }}
-      >
-
-
-        {
-          value.map((image,index)=>(
+          {value.map((image, index) => (
 
             <Card
               key={
-                image.public_id || index
+                image.preview ||
+                image.public_id ||
+                index
               }
               sx={{
-                position:"relative",
-                borderRadius:2,
-                overflow:"hidden",
+                position: "relative",
+                borderRadius: 2,
+                overflow: "hidden",
               }}
             >
-
 
               <CardMedia
                 component="img"
                 image={
+                  image.preview ||
                   image.thumb ||
                   image.full ||
                   image.original
                 }
-                alt="product"
+                alt={`Product image ${index + 1}`}
                 sx={{
-                  aspectRatio:"1",
-                  objectFit:"cover",
+                  aspectRatio: "1",
+                  objectFit: "cover",
                 }}
               />
 
 
-
               <IconButton
                 size="small"
-                onClick={()=>
+                onClick={() =>
                   removeImage(index)
                 }
                 sx={{
-                  position:"absolute",
-                  top:5,
-                  right:5,
-                  bgcolor:"background.paper",
+                  position: "absolute",
+                  top: 5,
+                  right: 5,
+                  bgcolor: "background.paper",
 
-                  "&:hover":{
-                    bgcolor:"background.paper",
+                  "&:hover": {
+                    bgcolor: "background.paper",
                   },
                 }}
               >
@@ -254,44 +237,32 @@ export default function ImageUploader({
               </IconButton>
 
 
-
-              {
-                index === 0 && (
-
-                  <Box
-                    sx={{
-                      position:"absolute",
-                      bottom:0,
-                      left:0,
-                      right:0,
-                      bgcolor:"primary.main",
-                      color:"white",
-                      textAlign:"center",
-                      fontSize:12,
-                      py:.5,
-                      fontWeight:700,
-                    }}
-                  >
-
-                    COVER
-
-                  </Box>
-
-                )
-              }
-
+              {index === 0 && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    bgcolor: "primary.main",
+                    color: "white",
+                    textAlign: "center",
+                    fontSize: 12,
+                    py: 0.5,
+                    fontWeight: 700,
+                  }}
+                >
+                  COVER
+                </Box>
+              )}
 
             </Card>
 
-          ))
-        }
+          ))}
 
-
-      </Box>
-
+        </Box>
+      )}
 
     </Stack>
-
   );
-
 }
