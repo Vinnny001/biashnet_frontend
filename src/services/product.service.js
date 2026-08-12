@@ -5,19 +5,17 @@ import api, { uploadApi } from "./api";
 export const productService = {
   /*
   |--------------------------------------------------------------------------
-  | LIST PRODUCTS
+  | LIST PRODUCTS — main API
   |--------------------------------------------------------------------------
   */
 
   list(params = {}) {
-    return api.get("/products", {
-      params,
-    });
+    return api.get("/products", { params });
   },
 
   /*
   |--------------------------------------------------------------------------
-  | GET PRODUCT
+  | GET PRODUCT — main API
   |--------------------------------------------------------------------------
   */
 
@@ -27,23 +25,8 @@ export const productService = {
 
   /*
   |--------------------------------------------------------------------------
-  | CREATE PRODUCT
+  | CREATE PRODUCT — upload server
   |--------------------------------------------------------------------------
-  |
-  | Product creation now happens on the upload server.
-  |
-  | Frontend
-  |    ↓
-  | upload server :5050
-  |    ↓
-  | verifySeller
-  |    ↓
-  | main API verifies JWT
-  |    ↓
-  | upload server receives verified seller
-  |    ↓
-  | Cloudinary / Firestore
-  |
   */
 
   create(payload) {
@@ -52,30 +35,27 @@ export const productService = {
 
   /*
   |--------------------------------------------------------------------------
-  | UPDATE PRODUCT
+  | UPDATE PRODUCT — upload server
   |--------------------------------------------------------------------------
-  |
-  | Currently still handled by the main API.
-  |
   */
 
   update(id, payload) {
-    return api.patch(`/products/${id}`, payload);
+    return uploadApi.patch(`/upload/product/${id}`, payload);
   },
 
   /*
   |--------------------------------------------------------------------------
-  | DELETE PRODUCT
+  | DELETE PRODUCT — upload server
   |--------------------------------------------------------------------------
   */
 
   remove(id) {
-    return uploadApi.delete(`/product/${id}`);
+    return uploadApi.delete(`/upload/product/${id}`);
   },
 
   /*
   |--------------------------------------------------------------------------
-  | REVIEWS
+  | REVIEWS — main API
   |--------------------------------------------------------------------------
   */
 
@@ -85,7 +65,7 @@ export const productService = {
 
   /*
   |--------------------------------------------------------------------------
-  | TRACK VIEW
+  | TRACK VIEW — main API
   |--------------------------------------------------------------------------
   */
 
