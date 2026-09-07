@@ -1,135 +1,831 @@
-import { Alert, Grid, Stack, Typography } from "@mui/material";
-import { useState } from "react";
+import {
+  Alert,
+  Box,
+  Button,
+  Divider,
+  Grid,
+  Paper,
+  Stack,
+  Typography,
+} from "@mui/material";
+
+import {
+  ArrowBack,
+  Lock,
+  Payment,
+  ShoppingBag,
+} from "@mui/icons-material";
+
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import CheckoutForm from "../../components/forms/CheckoutForm";
 import Card from "../../components/common/Card";
+
 import { useCart } from "../../hooks/useCart";
-import { orderService } from "../../services/order.service";
+
+import { checkoutService } from "../../services/checkout.Service";
+
 import { formatCurrency } from "../../utils/formatters";
 import { getErrorMessage } from "../../utils/errors";
 
+
 /*
 |--------------------------------------------------------------------------
-| Group cart items by sellerId
+| Checkout Page
 |--------------------------------------------------------------------------
 |
-| A single checkout can contain products from multiple sellers.
-| To prevent one seller from seeing another seller's items (or the
-| buyer's contact info tied to someone else's items), we split the
-| cart into one order PER seller before sending anything to the server.
+| IMPORTANT
 |
-| From the buyer's point of view this still feels like "one checkout" —
-| but it results in multiple order documents behind the scenes.
+| The frontend does NOT:
 |
+| - calculate the authoritative product price
+| - calculate commission
+| - calculate seller earnings
+| - determine sellerId
+| - create one order per seller
+|
+| The backend does all of that.
+|
+| Frontend only sends:
+|
+| {
+|   items: [
+|     {
+|       listingId,
+|       quantity
+|     }
+|   ],
+|   buyerPhone,
+|   deliveryAddress,
+|   idempotencyKey
+| }
+|
+|--------------------------------------------------------------------------
 */
 
-function groupItemsBySeller(items) {
-  const groups = new Map();
-
-  for (const item of items) {
-    const sellerId = item.sellerId || item.userId || "unknown";
-
-    if (!groups.has(sellerId)) {
-      groups.set(sellerId, []);
-    }
-
-    groups.get(sellerId).push(item);
-  }
-
-  return Array.from(groups.entries()).map(([sellerId, sellerItems]) => ({
-    sellerId,
-    items: sellerItems,
-    total: sellerItems.reduce(
-      (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 1),
-      0
-    ),
-  }));
-}
 
 export default function Checkout() {
-  const cart = useCart();
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  const [placing, setPlacing] = useState(false);
 
-  async function handleSubmit(values) {
-    if (placing) {
-      return;
+  const navigate =
+    useNavigate();
+
+
+  const cart =
+    useCart();
+
+
+  const [error, setError] =
+    useState("");
+
+
+  const [placing, setPlacing] =
+    useState(false);
+
+
+  const [checkoutCreated, setCheckoutCreated] =
+    useState(false);
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Redirect if cart is empty
+  |--------------------------------------------------------------------------
+  */
+
+  useEffect(() => {
+
+    if (
+      !cart.items ||
+      cart.items.length === 0
+    ) {
+
+      navigate("/cart", {
+        replace: true,
+      });
+
     }
 
+  }, [
+    cart.items,
+    navigate,
+  ]);
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | CREATE IDEMPOTENCY KEY
+  |--------------------------------------------------------------------------
+  |
+  | This protects against:
+  |
+  | - double tapping checkout
+  | - network retry
+  | - Android/browser retry
+  | - accidental duplicate order creation
+  |
+  |--------------------------------------------------------------------------
+  */
+
+  function createIdempotencyKey() {
+
+    if (
+      typeof crypto !== "undefined" &&
+      typeof crypto.randomUUID === "function"
+    ) {
+
+      return crypto.randomUUID();
+
+    }
+
+
+    return (
+      `checkout_${Date.now()}_${Math.random()
+        .toString(36)
+        .substring(2, 15)}`
+    );
+
+  }
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | SUBMIT CHECKOUT
+  |--------------------------------------------------------------------------
+  */
+
+  async function handleSubmit(values) {
+
+    if (placing) {
+
+      return;
+
+    }
+
+
+    if (
+      checkoutCreated
+    ) {
+
+      return;
+
+    }
+
+
     setError("");
+
     setPlacing(true);
 
-    try {
-      const sellerGroups = groupItemsBySeller(cart.items);
 
-      if (!sellerGroups.length) {
-        throw new Error("Your cart is empty.");
-      }
+    try {
 
       /*
-      |--------------------------------------------------------------------------
-      | Create one order per seller
-      |--------------------------------------------------------------------------
-      |
-      | Sent sequentially rather than Promise.all so that if one fails
-      | partway through, we know exactly how many orders actually went
-      | through (see catch block below) instead of an ambiguous mixed result.
-      |
+      ======================================================
+      PREPARE CART
+      ======================================================
       */
 
-      const createdOrders = [];
+      if (
+        !Array.isArray(cart.items) ||
+        cart.items.length === 0
+      ) {
 
-      for (const group of sellerGroups) {
-        const response = await orderService.create({
-          ...values,
-          items: group.items,
-          total: group.total,
-        });
+        throw new Error(
+          "Your cart is empty."
+        );
 
-        createdOrders.push(response);
       }
 
-      cart.clearCart();
 
-      setMessage(
-        sellerGroups.length > 1
-          ? `Order placed successfully — split into ${sellerGroups.length} orders since your cart had items from multiple sellers.`
-          : "Order placed successfully."
+      /*
+      ======================================================
+      SEND ONLY TRUSTED INPUTS
+      ======================================================
+      */
+
+      const items =
+        cart.items.map(
+          (item) => {
+
+            const listingId =
+              item.listingId ||
+              item.id;
+
+
+            const quantity =
+              Number(
+                item.quantity || 1
+              );
+
+
+            if (!listingId) {
+
+              throw new Error(
+                "A product in your cart is missing its listing ID."
+              );
+
+            }
+
+
+            if (
+              !Number.isInteger(quantity) ||
+              quantity <= 0
+            ) {
+
+              throw new Error(
+                "One of the products has an invalid quantity."
+              );
+
+            }
+
+
+            return {
+
+              listingId,
+
+              quantity,
+
+            };
+
+          }
+        );
+
+
+      /*
+      ======================================================
+      IDEMPOTENCY
+      ======================================================
+      */
+
+      const idempotencyKey =
+        createIdempotencyKey();
+
+
+      /*
+      ======================================================
+      CREATE SERVER-CONTROLLED CHECKOUT
+      ======================================================
+      */
+
+      const response =
+        await checkoutService.create({
+
+          items,
+
+          buyerPhone:
+            values.buyerPhone ||
+            values.phoneNumber ||
+            "",
+
+          deliveryAddress:
+            values.deliveryAddress ||
+            null,
+
+          idempotencyKey,
+
+        });
+
+
+      /*
+      ======================================================
+      VALIDATE RESPONSE
+      ======================================================
+      */
+
+      if (
+        !response ||
+        !response.orderId
+      ) {
+
+        throw new Error(
+          "Checkout was created but no order ID was returned."
+        );
+
+      }
+
+
+      /*
+      ======================================================
+      MARK CHECKOUT CREATED
+      ======================================================
+      */
+
+      setCheckoutCreated(
+        true
+      );
+
+
+      /*
+      ======================================================
+      DO NOT CLEAR CART YET
+      ======================================================
+      |
+      | We clear the cart AFTER payment succeeds.
+      |
+      | If STK initiation fails, the buyer should still
+      | have their cart.
+      |
+      ======================================================
+      */
+
+
+      /*
+      ======================================================
+      GO TO PAYMENT PAGE
+      ======================================================
+      */
+
+      navigate(
+        `/buyer/payment/${response.orderId}`,
+        {
+          state: {
+
+            orderId:
+              response.orderId,
+
+            checkout:
+              response,
+
+          },
+
+        }
       );
 
     } catch (err) {
+
+      console.error(
+        "Checkout creation error:",
+        err
+      );
+
+
       setError(
         getErrorMessage(
           err,
-          "Could not place order. If some items were already ordered, please check your Orders page before retrying."
+          "Could not create your checkout. Please try again."
         )
       );
+
     } finally {
+
       setPlacing(false);
+
     }
+
   }
 
+
+  /*
+  |--------------------------------------------------------------------------
+  | EMPTY CART UI
+  |--------------------------------------------------------------------------
+  */
+
+  if (
+    !cart.items ||
+    cart.items.length === 0
+  ) {
+
+    return null;
+
+  }
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | CALCULATE DISPLAY TOTAL
+  |--------------------------------------------------------------------------
+  |
+  | This is ONLY a visual estimate.
+  |
+  | The backend remains authoritative.
+  |
+  |--------------------------------------------------------------------------
+  */
+
+  const displaySubtotal =
+    cart.items.reduce(
+      (
+        total,
+        item
+      ) => {
+
+        return (
+          total +
+          Number(
+            item.price || 0
+          ) *
+          Number(
+            item.quantity || 1
+          )
+        );
+
+      },
+      0
+    );
+
+
   return (
-    <Grid container spacing={3}>
-      <Grid item xs={12} md={7}>
-        <Typography variant="h4" sx={{ mb: 2 }}>Checkout</Typography>
-        {message ? <Alert severity="success" sx={{ mb: 2 }}>{message}</Alert> : null}
-        {error ? <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert> : null}
-        <CheckoutForm onSubmit={handleSubmit} disabled={placing} />
-      </Grid>
-      <Grid item xs={12} md={5}>
-        <Card>
-          <Stack spacing={1}>
-            <Typography variant="h6">Order summary</Typography>
-            {cart.items.map((item) => (
-              <Typography key={item.id} color="text.secondary">
-                {item.quantity} x {item.name || item.title}
+
+    <Box
+      sx={{
+        py: {
+          xs: 2,
+          md: 4,
+        },
+      }}
+    >
+
+      {/* ==================================================
+          HEADER
+      ================================================== */}
+
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={1}
+        sx={{
+          mb: 3,
+        }}
+      >
+
+        <Button
+          startIcon={<ArrowBack />}
+          onClick={() =>
+            navigate("/cart")
+          }
+          disabled={placing}
+        >
+          Back to cart
+        </Button>
+
+      </Stack>
+
+
+      <Typography
+        variant="h4"
+        fontWeight={700}
+        sx={{
+          mb: 1,
+        }}
+      >
+        Checkout
+      </Typography>
+
+
+      <Typography
+        color="text.secondary"
+        sx={{
+          mb: 3,
+        }}
+      >
+        Confirm your delivery details before proceeding
+        to secure payment.
+      </Typography>
+
+
+      {/* ==================================================
+          ERROR
+      ================================================== */}
+
+      {error && (
+
+        <Alert
+          severity="error"
+          sx={{
+            mb: 3,
+          }}
+        >
+          {error}
+        </Alert>
+
+      )}
+
+
+      <Grid
+        container
+        spacing={3}
+      >
+
+        {/* =================================================
+            CHECKOUT FORM
+        ================================================= */}
+
+        <Grid
+          item
+          xs={12}
+          md={7}
+        >
+
+          <Card>
+
+            <Stack
+              spacing={2}
+            >
+
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+              >
+
+                <ShoppingBag />
+
+                <Typography
+                  variant="h6"
+                  fontWeight={700}
+                >
+                  Delivery details
+                </Typography>
+
+              </Stack>
+
+
+              <Divider />
+
+
+              <CheckoutForm
+                onSubmit={handleSubmit}
+                disabled={placing}
+              />
+
+            </Stack>
+
+          </Card>
+
+        </Grid>
+
+
+        {/* =================================================
+            ORDER SUMMARY
+        ================================================= */}
+
+        <Grid
+          item
+          xs={12}
+          md={5}
+        >
+
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 3,
+              position: {
+                md: "sticky",
+              },
+              top: {
+                md: 20,
+              },
+            }}
+          >
+
+            <Stack
+              spacing={2}
+            >
+
+              <Typography
+                variant="h6"
+                fontWeight={700}
+              >
+                Order summary
               </Typography>
-            ))}
-            <Typography variant="h5" color="primary.main">{formatCurrency(cart.total)}</Typography>
-          </Stack>
-        </Card>
+
+
+              <Divider />
+
+
+              {/* ==========================================
+                  ITEMS
+              ========================================== */}
+
+              <Stack
+                spacing={1.5}
+              >
+
+                {cart.items.map(
+                  (
+                    item,
+                    index
+                  ) => {
+
+                    const quantity =
+                      Number(
+                        item.quantity || 1
+                      );
+
+
+                    const price =
+                      Number(
+                        item.price || 0
+                      );
+
+
+                    const total =
+                      price *
+                      quantity;
+
+
+                    return (
+
+                      <Box
+                        key={
+                          item.listingId ||
+                          item.id ||
+                          index
+                        }
+                      >
+
+                        <Stack
+                          direction="row"
+                          justifyContent="space-between"
+                          spacing={2}
+                        >
+
+                          <Box
+                            sx={{
+                              minWidth: 0,
+                            }}
+                          >
+
+                            <Typography
+                              fontWeight={600}
+                              noWrap
+                            >
+                              {item.name ||
+                                item.title ||
+                                "Product"}
+                            </Typography>
+
+
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                            >
+                              Qty: {quantity}
+                            </Typography>
+
+                          </Box>
+
+
+                          <Typography
+                            fontWeight={600}
+                            sx={{
+                              whiteSpace:
+                                "nowrap",
+                            }}
+                          >
+                            {formatCurrency(
+                              total
+                            )}
+                          </Typography>
+
+                        </Stack>
+
+                      </Box>
+
+                    );
+
+                  }
+                )}
+
+              </Stack>
+
+
+              <Divider />
+
+
+              {/* ==========================================
+                  SUBTOTAL
+              ========================================== */}
+
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+              >
+
+                <Typography>
+                  Subtotal
+                </Typography>
+
+
+                <Typography
+                  fontWeight={600}
+                >
+                  {formatCurrency(
+                    displaySubtotal
+                  )}
+                </Typography>
+
+              </Stack>
+
+
+              {/* ==========================================
+                  DELIVERY
+              ========================================== */}
+
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+              >
+
+                <Typography>
+                  Delivery
+                </Typography>
+
+
+                <Typography
+                  fontWeight={600}
+                >
+                  Calculated at checkout
+                </Typography>
+
+              </Stack>
+
+
+              <Divider />
+
+
+              {/* ==========================================
+                  TOTAL
+              ========================================== */}
+
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+              >
+
+                <Typography
+                  variant="h6"
+                  fontWeight={700}
+                >
+                  Estimated total
+                </Typography>
+
+
+                <Typography
+                  variant="h5"
+                  fontWeight={800}
+                  color="primary.main"
+                >
+                  {formatCurrency(
+                    displaySubtotal
+                  )}
+                </Typography>
+
+              </Stack>
+
+
+              {/* ==========================================
+                  SECURITY
+              ========================================== */}
+
+              <Alert
+                severity="info"
+                icon={<Lock />}
+              >
+                Your final amount is verified securely
+                by Biashnet's backend before payment.
+              </Alert>
+
+
+              {/* ==========================================
+                  PAYMENT INDICATOR
+              ========================================== */}
+
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{
+                  pt: 1,
+                }}
+              >
+
+                <Payment />
+
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
+                  Secure M-Pesa payment
+                </Typography>
+
+              </Stack>
+
+            </Stack>
+
+          </Paper>
+
+        </Grid>
+
       </Grid>
-    </Grid>
+
+    </Box>
+
   );
+
 }

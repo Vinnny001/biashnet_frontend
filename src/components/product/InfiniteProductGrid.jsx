@@ -1,4 +1,4 @@
-import { Box, CircularProgress } from "@mui/material";
+import { Box, CircularProgress, Typography } from "@mui/material";
 import { useEffect, useRef } from "react";
 
 import ProductGrid from "./ProductGrid";
@@ -7,57 +7,48 @@ import ProductSkeleton from "./ProductSkeleton";
 export default function InfiniteProductGrid({
   products = [],
   loading = false,
-  hasMore = true,
+  hasMore = false,
   onLoadMore,
 }) {
   const loaderRef = useRef(null);
 
   useEffect(() => {
-    if (!hasMore || loading) return;
+    if (!hasMore || loading || !onLoadMore) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          onLoadMore?.();
-        }
+        if (entry.isIntersecting) onLoadMore();
       },
-      {
-        root: null,
-        rootMargin: "200px",
-        threshold: 0.1,
-      }
+      { rootMargin: "500px 0px" }
     );
 
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
+    const node = loaderRef.current;
+
+    if (node) observer.observe(node);
 
     return () => observer.disconnect();
   }, [loading, hasMore, onLoadMore]);
 
   return (
-    <>
+    <Box sx={{ width: "100%" }}>
       <ProductGrid products={products} />
 
       {loading && (
         <Box
           sx={{
-            mt: 2,
             display: "grid",
             gridTemplateColumns: {
-              xs: "repeat(2, 1fr)",
-              sm: "repeat(3, 1fr)",
-              md: "repeat(4, 1fr)",
-              lg: "repeat(5, 1fr)",
+              xs: "repeat(2, minmax(0, 1fr))",
+              sm: "repeat(3, minmax(0, 1fr))",
+              md: "repeat(4, minmax(0, 1fr))",
+              lg: "repeat(5, minmax(0, 1fr))",
             },
-            gap: 2,
+            gap: { xs: 1, sm: 1.5, md: 2 },
+            mt: 1.5,
           }}
         >
-          {Array.from({ length: 6 }).map((_, index) => (
-            <ProductSkeleton
-              key={index}
-              count={1}
-            />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <ProductSkeleton key={i} />
           ))}
         </Box>
       )}
@@ -65,15 +56,26 @@ export default function InfiniteProductGrid({
       <Box
         ref={loaderRef}
         sx={{
+          minHeight: 60,
           display: "flex",
+          alignItems: "center",
           justifyContent: "center",
-          py: 4,
         }}
       >
-        {hasMore && !loading && (
-          <CircularProgress size={28} />
+        {hasMore && loading && <CircularProgress size={24} />}
+
+        {!hasMore && products.length > 0 && (
+          <Typography
+            sx={{
+              fontSize: 12,
+              color: "text.secondary",
+              py: 2,
+            }}
+          >
+            You've reached the end
+          </Typography>
         )}
       </Box>
-    </>
+    </Box>
   );
 }

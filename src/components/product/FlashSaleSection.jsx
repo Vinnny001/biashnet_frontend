@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
@@ -7,115 +8,266 @@ import {
 } from "@mui/material";
 import LocalFireDepartmentRoundedIcon from "@mui/icons-material/LocalFireDepartmentRounded";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
+import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
+
 import ProductCard from "./ProductCard";
 
+const getTime = (value) =>
+  value?.toDate?.()?.getTime() ||
+  new Date(value || 0).getTime();
+
+const formatTime = (ms) => {
+  if (ms <= 0) return "00:00:00";
+
+  const total = Math.floor(ms / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+
+  return [h, m, s]
+    .map((v) => String(v).padStart(2, "0"))
+    .join(":");
+};
+
 export default function FlashSaleSection({
-  products = [],
-  countdown = "02:14:56",
-  title = "Flash Sale",
+  activeProducts = [],
+  previousProducts = [],
   onSeeAll,
 }) {
+  const [now, setNow] = useState(Date.now());
+
+  /* Keep countdown alive */
+  useEffect(() => {
+    const timer = setInterval(
+      () => setNow(Date.now()),
+      1000
+    );
+
+    return () => clearInterval(timer);
+  }, []);
+
+  /* Remove expired sales automatically */
+  const currentProducts = useMemo(
+    () =>
+      activeProducts.filter((product) => {
+        const start = getTime(product.flashSaleStart);
+        const end = getTime(product.flashSaleEnd);
+
+        return (
+          product.flashSale === true &&
+          start <= now &&
+          end > now &&
+          Number(product.flashSalePrice) > 0
+        );
+      }),
+    [activeProducts, now]
+  );
+
+  /* Fill empty spaces with previous sales */
+  const products = useMemo(() => {
+    const activeIds = new Set(
+      currentProducts.map((p) => p.id || p._id)
+    );
+
+    const previous = previousProducts
+      .filter(
+        (p) =>
+          !activeIds.has(p.id || p._id)
+      )
+      .slice(0, 8 - currentProducts.length);
+
+    return [
+      ...currentProducts,
+      ...previous,
+    ];
+  }, [currentProducts, previousProducts]);
+
   if (!products.length) return null;
+
+  /* Earliest active sale ending */
+  const nextEnd = currentProducts.length
+    ? Math.min(
+        ...currentProducts
+          .map((p) =>
+            getTime(p.flashSaleEnd)
+          )
+          .filter(Boolean)
+      )
+    : null;
+
+  const hasActiveSales =
+    currentProducts.length > 0;
+
+  const countdown = nextEnd
+    ? formatTime(nextEnd - now)
+    : null;
 
   return (
     <Box
       sx={{
-        mb: 4,
-        p: 2,
+        mb: 3,
         borderRadius: 3,
-        bgcolor: "error.main",
-        color: "white",
+        overflow: "hidden",
+        bgcolor: "#fff5f5",
+        border: "1px solid #ffd6d6",
       }}
     >
-      {/* Header */}
-
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={2}
-        flexWrap="wrap"
-        rowGap={1}
+      {/* HEADER */}
+      <Box
+        sx={{
+          px: 1.5,
+          py: 1.3,
+          bgcolor: "#020000",
+          color: "#fff",
+        }}
       >
         <Stack
           direction="row"
-          spacing={1}
           alignItems="center"
+          justifyContent="space-between"
+          gap={1}
         >
-          <LocalFireDepartmentRoundedIcon />
-
-          <Typography
-            variant="h6"
-            fontWeight={700}
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={0.7}
+            minWidth={0}
           >
-            {title}
-          </Typography>
+            <LocalFireDepartmentRoundedIcon />
 
-          <Chip
-            label={`Ends in ${countdown}`}
-            size="small"
-            sx={{
-              bgcolor: "white",
-              color: "error.main",
-              fontWeight: 700,
-            }}
-          />
+            <Box>
+              <Typography
+                fontWeight={900}
+                fontSize={17}
+                lineHeight={1.1}
+              >
+                {hasActiveSales
+                  ? "Flash Sale"
+                  : "Flash Sale Picks"}
+              </Typography>
+
+              <Typography
+                fontSize={10}
+                sx={{ opacity: 0.85 }}
+              >
+                {hasActiveSales
+                  ? "Limited-time deals"
+                  : "Popular recent offers"}
+              </Typography>
+            </Box>
+          </Stack>
+
+          {hasActiveSales && (
+            <Chip
+              icon={
+                <AccessTimeRoundedIcon
+                  sx={{
+                    color: "#fff !important",
+                  }}
+                />
+              }
+              label={`Ends ${countdown}`}
+              size="small"
+              sx={{
+                bgcolor: "#fff",
+                color: "#d32f2f",
+                fontWeight: 900,
+                "& .MuiChip-label": {
+                  px: 1,
+                },
+              }}
+            />
+          )}
         </Stack>
+      </Box>
 
-        <Button
-          endIcon={<ArrowForwardRoundedIcon />}
-          onClick={onSeeAll}
-          sx={{
-            color: "white",
-            borderColor: "white",
-
-            "&:hover": {
-              borderColor: "white",
-            },
-          }}
-          variant="outlined"
-        >
-          See All
-        </Button>
-      </Stack>
-
-      {/* Products */}
-
+      {/* PRODUCTS */}
       <Box
         sx={{
           display: "flex",
-          gap: 2,
+          gap: 1.2,
           overflowX: "auto",
-          pb: 1,
-
-          scrollBehavior: "smooth",
-
+          p: 1.3,
+          pb: 1.5,
+          scrollSnapType: "x mandatory",
           "&::-webkit-scrollbar": {
             display: "none",
           },
-
           scrollbarWidth: "none",
         }}
       >
-        {products.map((product) => (
-          <Box
-            key={product.id || product._id}
+        {products.map((product, index) => {
+          const id =
+            product.id || product._id;
+
+          const isActive =
+            index < currentProducts.length;
+
+          return (
+            <Box
+              key={id}
+              sx={{
+                flex: "0 0 168px",
+                scrollSnapAlign: "start",
+                position: "relative",
+              }}
+            >
+              {!isActive && (
+                <Typography
+                  sx={{
+                    position: "absolute",
+                    zIndex: 2,
+                    top: 6,
+                    left: 6,
+                    px: 0.7,
+                    py: 0.3,
+                    borderRadius: 1,
+                    bgcolor: "#555",
+                    color: "#fff",
+                    fontSize: 9,
+                    fontWeight: 800,
+                  }}
+                >
+                  RECENT DEAL
+                </Typography>
+              )}
+
+              <ProductCard
+                product={product}
+              />
+            </Box>
+          );
+        })}
+      </Box>
+
+      {/* FOOTER */}
+      {onSeeAll && (
+        <Box
+          sx={{
+            px: 1.5,
+            pb: 1.5,
+          }}
+        >
+          <Button
+            fullWidth
+            variant="outlined"
+            endIcon={
+              <ArrowForwardRoundedIcon />
+            }
+            onClick={onSeeAll}
             sx={{
-              minWidth: {
-                xs: 180,
-                sm: 220,
-              },
-              maxWidth: {
-                xs: 180,
-                sm: 220,
-              },
-              flexShrink: 0,
+              minHeight: 38,
+              borderRadius: 2,
+              borderColor: "#d32f2f",
+              color: "#d32f2f",
+              fontWeight: 800,
+              textTransform: "none",
             }}
           >
-            <ProductCard product={product} />
-          </Box>
-        ))}
-      </Box>
+            See All Deals
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 }

@@ -21,6 +21,7 @@ import Card from "../../components/common/Card";
 import Loading from "../../components/common/Loading";
 import ProductGallery from "../../components/product/ProductGallery";
 import ProductReviews from "../../components/product/ProductReviews";
+import BuyNowDialog from "../../components/checkout/BuyNowDialog";
 import { useCart } from "../../hooks/useCart";
 import { productService } from "../../services/product.service";
 import { formatCurrency } from "../../utils/formatters";
@@ -49,7 +50,7 @@ export default function ProductDetails() {
   const [product, setProduct] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const [buyNowOpen, setBuyNowOpen] = useState(false);
   useEffect(() => {
     setLoading(true);
     Promise.allSettled([productService.get(id), productService.reviews(id)])
@@ -193,21 +194,23 @@ export default function ProductDetails() {
               <Typography variant="body2">{product.views ?? 0} views</Typography>
             </Stack>
 
-            <Button
-              variant="contained"
-              size="large"
-              disabled={!inStock}
-              onClick={() => addItem(product)}
-              sx={{
-                py: 1.4,
-                borderRadius: 2,
-                fontWeight: 700,
-                textTransform: "none",
-                fontSize: "1rem",
-              }}
-            >
-              {inStock ? "Add to cart" : "Out of stock"}
-            </Button>
+           <Stack direction="row" spacing={1}>
+  <Button
+    fullWidth
+    variant="outlined"
+    onClick={() => addItem(product)}
+  >
+    Add to Cart
+  </Button>
+
+  <Button
+    fullWidth
+    variant="contained"
+    onClick={() => setBuyNowOpen(true)}
+  >
+    Buy Now
+  </Button>
+</Stack>
 
             <Divider />
 
@@ -263,6 +266,15 @@ export default function ProductDetails() {
       <Grid item xs={12}>
         <ProductReviews reviews={reviews} rating={product.rating} count={product.reviewCount} />
       </Grid>
+
+       <BuyNowDialog
+  open={buyNowOpen}
+  onClose={() => setBuyNowOpen(false)}
+  product={product}
+  onSuccess={(result) => {
+    console.log("Purchase started:", result);
+  }}
+/>
     </Grid>
   );
 }

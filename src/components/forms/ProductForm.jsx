@@ -1,21 +1,28 @@
-// src/components/product/ProductForm.jsx
+import {
+  Alert,
+  Box,
+  Button,
+  Divider,
+  MenuItem,
+  Paper,
+  Stack,
+  Typography,
+} from "@mui/material";
 
 import {
-  Button,
-  MenuItem,
-  Stack,
-  Divider,
-  Typography,
-  Box,
-  CircularProgress,
-} from "@mui/material";
+  CheckCircleRounded,
+  ImageRounded,
+  Inventory2Rounded,
+  LocationOnRounded,
+  PaymentsRounded,
+  PublishRounded,
+  StorefrontRounded,
+} from "@mui/icons-material";
 
 import { useState } from "react";
 
 import Input from "../common/Input";
 import ImageUploader from "../product/ImageUploader";
-
-// uploadService no longer needed here — upload server handles everything now
 
 const categories = [
   { value: "electronics", label: "Electronics" },
@@ -31,8 +38,60 @@ const categories = [
 
 const conditions = ["New", "Used", "Refurbished"];
 
-export default function ProductForm({ initialValues = {}, onSubmit }) {
-  const [images, setImages] = useState(initialValues.images || []);
+function FormSection({
+  icon: Icon,
+  title,
+  description,
+  children,
+}) {
+  return (
+    <Stack spacing={2.5}>
+      <Stack direction="row" spacing={1.5} alignItems="flex-start">
+        <Box
+          sx={{
+            width: 42,
+            height: 42,
+            borderRadius: 2,
+            bgcolor: "primary.main",
+            color: "primary.contrastText",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <Icon />
+        </Box>
+
+        <Box>
+          <Typography variant="h6" fontWeight={900}>
+            {title}
+          </Typography>
+
+          {description && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mt: 0.25 }}
+            >
+              {description}
+            </Typography>
+          )}
+        </Box>
+      </Stack>
+
+      {children}
+    </Stack>
+  );
+}
+
+export default function ProductForm({
+  initialValues = {},
+  onSubmit,
+}) {
+  const [images, setImages] = useState(
+    initialValues.images || []
+  );
 
   const [values, setValues] = useState({
     name: initialValues.name || "",
@@ -67,19 +126,37 @@ export default function ProductForm({ initialValues = {}, onSubmit }) {
 
     setError("");
 
-    /*
-    |--------------------------------------------------------------------------
-    | Validate product
-    |--------------------------------------------------------------------------
-    */
+    const name = values.name.trim();
+    const price = Number(values.price);
+    const stock = Number(values.stock);
 
-    if (!values.name.trim()) {
+    if (!name) {
       setError("Please enter the product name.");
       return;
     }
 
-    if (!values.price) {
-      setError("Please enter the selling price.");
+    if (!values.category) {
+      setError("Please select a category.");
+      return;
+    }
+
+    if (!values.price || Number.isNaN(price) || price <= 0) {
+      setError("Please enter a valid selling price.");
+      return;
+    }
+
+    if (!stock || Number.isNaN(stock) || stock < 1) {
+      setError("Please enter a valid stock quantity.");
+      return;
+    }
+
+    if (!values.location.trim()) {
+      setError("Please enter your selling location.");
+      return;
+    }
+
+    if (!values.description.trim()) {
+      setError("Please add a short product description.");
       return;
     }
 
@@ -88,64 +165,61 @@ export default function ProductForm({ initialValues = {}, onSubmit }) {
       return;
     }
 
+    if (images.length > 8) {
+      setError("You can upload a maximum of 8 images.");
+      return;
+    }
+
     setPublishing(true);
 
     try {
-      /*
-      |--------------------------------------------------------------------------
-      | Split new files (need upload) vs existing images (already have URLs)
-      |--------------------------------------------------------------------------
-      */
-
       const newFiles = images
         .filter((image) => image?.file)
         .map((image) => image.file);
 
-      const existingImages = images.filter((image) => !image?.file);
-
-      /*
-      |--------------------------------------------------------------------------
-      | Build ONE multipart request — product fields + image files together
-      |--------------------------------------------------------------------------
-      |
-      | POST http://localhost:5050/upload/product
-      |
-      | verifySeller -> Multer -> Cloudinary -> Firestore, all server-side.
-      |
-      */
+      const existingImages = images.filter(
+        (image) => !image?.file
+      );
 
       const formData = new FormData();
 
-      formData.append("name", values.name.trim());
+      formData.append("name", name);
       formData.append("category", values.category);
-      formData.append("subCategory", values.subCategory);
-      formData.append("price", Number(values.price));
+      formData.append(
+        "subCategory",
+        values.subCategory.trim()
+      );
+      formData.append("price", price);
 
       formData.append(
         "oldPrice",
-        values.oldPrice !== "" && values.oldPrice !== null
+        values.oldPrice !== "" &&
+          values.oldPrice !== null
           ? Number(values.oldPrice)
           : ""
       );
 
-      formData.append("description", values.description);
-      formData.append("location", values.location);
+      formData.append(
+        "description",
+        values.description.trim()
+      );
+
+      formData.append(
+        "location",
+        values.location.trim()
+      );
+
       formData.append("condition", values.condition);
-      formData.append("stock", Number(values.stock));
+      formData.append("stock", stock);
 
-      // Existing image objects (relevant when editing), server can merge these
-      formData.append("existingImages", JSON.stringify(existingImages));
+      formData.append(
+        "existingImages",
+        JSON.stringify(existingImages)
+      );
 
-      // New files — Multer picks these up as an array under "images"
       newFiles.forEach((file) => {
         formData.append("images", file);
       });
-
-      /*
-      |--------------------------------------------------------------------------
-      | Send to parent — parent calls productService.create(formData)
-      |--------------------------------------------------------------------------
-      */
 
       await onSubmit?.(formData);
     } catch (err) {
@@ -164,61 +238,249 @@ export default function ProductForm({ initialValues = {}, onSubmit }) {
   }
 
   return (
-    <Stack component="form" spacing={2.5} onSubmit={handleSubmit}>
+    <Stack
+      component="form"
+      spacing={{ xs: 3, md: 4 }}
+      onSubmit={handleSubmit}
+    >
+      {/* Error */}
       {error && (
-        <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: "error.light", color: "error.contrastText" }}>
-          <Typography variant="body2" fontWeight={600}>
-            {error}
-          </Typography>
-        </Box>
+        <Alert
+          severity="error"
+          onClose={() => setError("")}
+          sx={{ borderRadius: 2 }}
+        >
+          {error}
+        </Alert>
       )}
 
-      <Typography variant="h6" fontWeight={700}>Product Information</Typography>
-      <Input label="Product name" value={values.name} onChange={update("name")} required />
-      <Input select label="Category" value={values.category} onChange={update("category")}>
-        {categories.map((item) => (
-          <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>
-        ))}
-      </Input>
-      <Input label="Sub category" value={values.subCategory} onChange={update("subCategory")} placeholder="Example: Samsung phones" />
+      {/* Images first */}
+      <FormSection
+        icon={ImageRounded}
+        title="Product Photos"
+        description="Good photos help buyers trust your listing."
+      >
+        <Paper
+          variant="outlined"
+          sx={{
+            p: { xs: 1.5, md: 2 },
+            borderRadius: 2,
+          }}
+        >
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mb: 2 }}
+          >
+            Add up to 8 clear photos. Use a main photo that
+            clearly shows the product.
+          </Typography>
+
+          <ImageUploader
+            value={images}
+            onChange={setImages}
+          />
+
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: "block", mt: 1.5 }}
+          >
+            {images.length}/8 images selected
+          </Typography>
+        </Paper>
+      </FormSection>
 
       <Divider />
 
-      <Typography variant="h6" fontWeight={700}>Pricing</Typography>
-      <Input label="Selling price" type="number" value={values.price} onChange={update("price")} required inputProps={{ min: 0 }} />
-      <Input label="Previous price (optional)" type="number" value={values.oldPrice} onChange={update("oldPrice")} inputProps={{ min: 0 }} />
+      {/* Basic information */}
+      <FormSection
+        icon={StorefrontRounded}
+        title="Basic Information"
+        description="Tell buyers what you are selling."
+      >
+        <Input
+          label="Product name"
+          value={values.name}
+          onChange={update("name")}
+          placeholder="Example: Samsung Galaxy A15"
+          required
+          fullWidth
+        />
+
+        <Input
+          select
+          label="Category"
+          value={values.category}
+          onChange={update("category")}
+          fullWidth
+        >
+          {categories.map((item) => (
+            <MenuItem
+              key={item.value}
+              value={item.value}
+            >
+              {item.label}
+            </MenuItem>
+          ))}
+        </Input>
+
+        <Input
+          label="Subcategory"
+          value={values.subCategory}
+          onChange={update("subCategory")}
+          placeholder="Example: Samsung phones"
+          fullWidth
+        />
+
+        <Input
+          label="Description"
+          value={values.description}
+          onChange={update("description")}
+          placeholder="Describe the product, features, condition and anything buyers should know."
+          multiline
+          minRows={5}
+          fullWidth
+        />
+      </FormSection>
 
       <Divider />
 
-      <Typography variant="h6" fontWeight={700}>Product Details</Typography>
-      <Input select label="Condition" value={values.condition} onChange={update("condition")}>
-        {conditions.map((condition) => (
-          <MenuItem key={condition} value={condition}>{condition}</MenuItem>
-        ))}
-      </Input>
-      <Input label="Stock quantity" type="number" value={values.stock} onChange={update("stock")} inputProps={{ min: 1 }} />
-      <Input label="Location" value={values.location} onChange={update("location")} placeholder="Example: Juja, Nairobi" />
-      <Input label="Description" value={values.description} onChange={update("description")} multiline minRows={5} />
+      {/* Pricing */}
+      <FormSection
+        icon={PaymentsRounded}
+        title="Price"
+        description="Set your selling price and optional previous price."
+      >
+        <Input
+          label="Selling price"
+          type="number"
+          value={values.price}
+          onChange={update("price")}
+          placeholder="Example: 18000"
+          required
+          fullWidth
+          inputProps={{ min: 0 }}
+        />
+
+        <Input
+          label="Previous price"
+          type="number"
+          value={values.oldPrice}
+          onChange={update("oldPrice")}
+          placeholder="Optional"
+          fullWidth
+          inputProps={{ min: 0 }}
+        />
+      </FormSection>
 
       <Divider />
 
-      <Typography variant="h6" fontWeight={700}>Product Images</Typography>
-      <Typography variant="body2" color="text.secondary">
-        Select up to 8 images. Images will be uploaded when you publish.
-      </Typography>
-      <ImageUploader value={images} onChange={setImages} />
+      {/* Inventory */}
+      <FormSection
+        icon={Inventory2Rounded}
+        title="Inventory"
+        description="Tell us how many items are available."
+      >
+        <Input
+          select
+          label="Condition"
+          value={values.condition}
+          onChange={update("condition")}
+          fullWidth
+        >
+          {conditions.map((condition) => (
+            <MenuItem
+              key={condition}
+              value={condition}
+            >
+              {condition}
+            </MenuItem>
+          ))}
+        </Input>
 
-      <Box>
-        <Button type="submit" variant="contained" size="large" fullWidth disabled={!images.length || publishing}>
-          {publishing ? (
-            <>
-              <CircularProgress size={22} color="inherit" sx={{ mr: 1 }} />
-              Publishing...
-            </>
-          ) : (
-            "Publish Product"
-          )}
+        <Input
+          label="Stock quantity"
+          type="number"
+          value={values.stock}
+          onChange={update("stock")}
+          required
+          fullWidth
+          inputProps={{ min: 1 }}
+        />
+      </FormSection>
+
+      <Divider />
+
+      {/* Location */}
+      <FormSection
+        icon={LocationOnRounded}
+        title="Location"
+        description="Help buyers know where you are located."
+      >
+        <Input
+          label="Selling location"
+          value={values.location}
+          onChange={update("location")}
+          placeholder="Example: Juja, Nairobi"
+          required
+          fullWidth
+        />
+      </FormSection>
+
+      {/* Publish */}
+      <Box
+        sx={{
+          position: { xs: "sticky", md: "static" },
+          bottom: { xs: 76, md: "auto" },
+          zIndex: 5,
+          bgcolor: "background.paper",
+          pt: 1,
+        }}
+      >
+        <Button
+          type="submit"
+          variant="contained"
+          size="large"
+          fullWidth
+          disabled={!images.length || publishing}
+          startIcon={
+            publishing ? null : <PublishRounded />
+          }
+          sx={{
+            minHeight: 54,
+            borderRadius: 2.5,
+            fontWeight: 900,
+            fontSize: "1rem",
+          }}
+        >
+          {publishing
+            ? "Publishing Product..."
+            : "Publish Product"}
         </Button>
+
+        {!publishing && (
+          <Stack
+            direction="row"
+            justifyContent="center"
+            alignItems="center"
+            spacing={0.75}
+            sx={{ mt: 1 }}
+          >
+            <CheckCircleRounded
+              sx={{ fontSize: 16 }}
+              color="success"
+            />
+
+            <Typography
+              variant="caption"
+              color="text.secondary"
+            >
+              Your listing will be reviewed according to
+              BIASHNET marketplace rules.
+            </Typography>
+          </Stack>
+        )}
       </Box>
     </Stack>
   );

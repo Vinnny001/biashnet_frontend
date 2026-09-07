@@ -3,55 +3,66 @@ import api from "./api";
 
 /*
 =========================================================
-GET SINGLE ORDER
+CREATE WITHDRAWAL
 =========================================================
 */
 
-export async function getOrder(orderId) {
-
-    return api.get(
-        `/orders/${orderId}`
-    );
-}
-
-
-/*
-=========================================================
-GET BUYER ORDERS
-=========================================================
-*/
-
-export async function getMyOrders() {
-
-    return api.get(
-        "/orders/my"
-    );
-}
-
-
-/*
-=========================================================
-GET SELLER ORDERS
-=========================================================
-*/
-
-export async function getSellerOrders() {
-
-    return api.get(
-        "/orders/seller"
-    );
-}
-
-
-/*
-=========================================================
-CANCEL ORDER
-=========================================================
-*/
-
-export async function cancelOrder(orderId) {
+export async function createWithdrawal({
+    amount,
+    phoneNumber
+}) {
 
     return api.post(
-        `/orders/${orderId}/cancel`
+        "/withdrawals",
+        {
+            amount,
+            phoneNumber
+        }
+    );
+}
+
+
+/*
+=========================================================
+GET MY WITHDRAWALS
+=========================================================
+*/
+
+export async function getMyWithdrawals() {
+
+    return api.get(
+        "/withdrawals"
+    );
+}
+
+
+/*
+=========================================================
+GET ONE WITHDRAWAL
+=========================================================
+*/
+
+export async function getWithdrawal(
+    withdrawalId
+) {
+
+    return api.get(
+        `/withdrawals/${withdrawalId}`
+    );
+}
+
+
+/*
+=========================================================
+CANCEL WITHDRAWAL
+=========================================================
+*/
+
+export async function cancelWithdrawal(
+    withdrawalId
+) {
+
+    return api.post(
+        `/withdrawals/${withdrawalId}/cancel`
     );
 }

@@ -16,6 +16,7 @@ import BuildRoundedIcon from "@mui/icons-material/BuildRounded";
 
 const ICONS = {
   All: <AppsRoundedIcon fontSize="small" />,
+  Products: <LocalMallRoundedIcon fontSize="small" />,
   Phones: <PhoneAndroidRoundedIcon fontSize="small" />,
   Electronics: <ComputerRoundedIcon fontSize="small" />,
   Fashion: <CheckroomRoundedIcon fontSize="small" />,
@@ -24,10 +25,12 @@ const ICONS = {
   Sports: <SportsSoccerRoundedIcon fontSize="small" />,
   Automotive: <DirectionsCarRoundedIcon fontSize="small" />,
   Home: <HomeRoundedIcon fontSize="small" />,
+  Houses: <HomeRoundedIcon fontSize="small" />,
   Beauty: <LocalMallRoundedIcon fontSize="small" />,
   Health: <MedicalServicesRoundedIcon fontSize="small" />,
   Food: <RestaurantRoundedIcon fontSize="small" />,
   Services: <BuildRoundedIcon fontSize="small" />,
+  Adverts: <AppsRoundedIcon fontSize="small" />,
 };
 
 export default function CategoryScroller({
@@ -50,46 +53,87 @@ export default function CategoryScroller({
         },
 
         scrollbarWidth: "none",
-
         msOverflowStyle: "none",
       }}
     >
-      {categories.map((category) => (
-        <Chip
-          key={category}
-          clickable
-          icon={ICONS[category] || <AppsRoundedIcon fontSize="small" />}
-          label={category}
-          onClick={() => onSelect(category)}
-          color={
-            selected === category
-              ? "primary"
-              : "default"
-          }
-          variant={
-            selected === category
-              ? "filled"
-              : "outlined"
-          }
-          sx={{
-            flexShrink: 0,
+      {categories.map((category, index) => {
+        const isObject =
+          category &&
+          typeof category === "object";
 
-            px: 1,
+        const id =
+          isObject
+            ? category.id ||
+              category.slug ||
+              `category-${index}`
+            : category;
 
-            borderRadius: 5,
+        const label =
+          isObject
+            ? category.name ||
+              category.title ||
+              "Category"
+            : category;
 
-            fontWeight: 600,
+        const icon =
+          isObject && category.icon
+            ? category.icon
+            : ICONS[label] || (
+                <AppsRoundedIcon
+                  fontSize="small"
+                />
+              );
 
-            height: 40,
+        const selectedValue =
+          isObject
+            ? category.id ||
+              category.slug ||
+              category.name
+            : category;
 
-            transition: ".25s",
+        const isSelected =
+          selected === selectedValue ||
+          selected === label;
 
-            "&:hover": {
-              transform: "translateY(-2px)",
-            },
-          }}
-        />
-      ))}
+        return (
+          <Chip
+            key={id}
+            clickable
+            icon={icon}
+            label={label}
+            onClick={() =>
+              onSelect?.(
+                isObject
+                  ? category
+                  : category
+              )
+            }
+            color={
+              isSelected
+                ? "primary"
+                : "default"
+            }
+            variant={
+              isSelected
+                ? "filled"
+                : "outlined"
+            }
+            sx={{
+              flexShrink: 0,
+              px: 1,
+              borderRadius: 5,
+              fontWeight: 600,
+              height: 40,
+              transition: ".25s",
+
+              "&:hover": {
+                transform:
+                  "translateY(-2px)",
+              },
+            }}
+          />
+        );
+      })}
     </Box>
   );
 }

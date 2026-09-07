@@ -64,7 +64,6 @@ export default function AppRoutes() {
   return (
     <Routes>
       <Route element={<GuestLayout />}>
-        <Route index element={withSuspense(RoleRedirect)} />
         <Route path="/login" element={withSuspense(Login)} />
         <Route path="/signup" element={withSuspense(Signup)} />
         <Route path="/forgot-password" element={withSuspense(ForgotPassword)} />
@@ -77,13 +76,15 @@ export default function AppRoutes() {
         <Route path="/500" element={withSuspense(ServerError)} />
       </Route>
 
-      <Route element={<BuyerLayout />}>
-        <Route path="/products" element={withSuspense(Products)} />
-        <Route path="/products/:id" element={withSuspense(ProductDetails)} />
-        <Route path="/search" element={withSuspense(SearchResults)} />
-        <Route path="/cart" element={withSuspense(Cart)} />
-        <Route path="/wishlist" element={withSuspense(Wishlist)} />
-      </Route>
+<Route element={<BuyerLayout />}>
+  {/* PUBLIC MARKETPLACE */}
+  <Route index element={withSuspense(Home)} />
+  <Route path="/products" element={withSuspense(Products)} />
+  <Route path="/products/:id" element={withSuspense(ProductDetails)} />
+  <Route path="/search" element={withSuspense(SearchResults)} />
+  <Route path="/cart" element={withSuspense(Cart)} />
+  <Route path="/wishlist" element={withSuspense(Wishlist)} />
+</Route>
 
       <Route element={<RoleRoute allow={["buyer"]} />}>
         <Route element={<BuyerLayout />}>
