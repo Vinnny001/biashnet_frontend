@@ -297,7 +297,9 @@ api.interceptors.response.use(
 |
 | BASE:
 |
-| https://biashnet-mpesa-api.onrender.com/api
+| PAYMENT_API_BASE_URL (see utils/constants.js —
+| override with VITE_PAYMENT_API_BASE_URL if the Render
+| service URL ever changes again)
 |
 | Backend routes:
 |

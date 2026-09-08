@@ -72,10 +72,11 @@ Handles:
 const PAYMENT_API_URLS = {
   development:
     import.meta.env.VITE_PAYMENT_API_BASE_URL ||
-    "https://biashnet-mpesa-api.onrender.com/api",
+    "https://biashnet-mpesa-api-j49w.onrender.com/api",
 
   production:
-    "https://biashnet-mpesa-api.onrender.com/api",
+    import.meta.env.VITE_PAYMENT_API_BASE_URL ||
+    "https://biashnet-mpesa-api-j49w.onrender.com/api",
 };
 
 export const PAYMENT_API_BASE_URL =
