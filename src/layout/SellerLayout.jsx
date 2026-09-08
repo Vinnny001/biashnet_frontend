@@ -24,6 +24,7 @@ import {
 import {
   AddRounded,
   AnalyticsRounded,
+  BadgeRounded,
   ChatRounded,
   DashboardRounded,
   Inventory2Rounded,
@@ -42,6 +43,9 @@ import {
 
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Outlet } from "react-router-dom";
+
+import { useAuth } from "../hooks/useAuth";
+import { useEmployee } from "../hooks/useEmployee";
 
 const sellerLinks = [
   {
@@ -129,6 +133,8 @@ export default function SellerLayout() {
 
   const location = useLocation();
   const navigate = useNavigate();
+  const { logout } = useAuth();
+  const { isEmployee } = useEmployee();
 
   const currentPath = location.pathname;
 
@@ -150,17 +156,15 @@ export default function SellerLayout() {
     navigate("/");
   };
 
-  const handleLogout = () => {
-    /*
-     * Connect your real AuthContext logout here.
-     *
-     * Example:
-     * await logout();
-     * navigate("/");
-     */
-
+  const handleLogout = async () => {
     setOpen(false);
+    await logout();
     navigate("/");
+  };
+
+  const handleGoToEmployeeDashboard = () => {
+    setOpen(false);
+    navigate("/employee/dashboard");
   };
 
   return (
@@ -429,6 +433,25 @@ export default function SellerLayout() {
             Switch to Buyer
           </Button>
 
+          {isEmployee && (
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<BadgeRounded />}
+              onClick={handleGoToEmployeeDashboard}
+              sx={{
+                justifyContent: "flex-start",
+                py: 1.2,
+                px: 1.5,
+                mt: 0.5,
+                fontWeight: 700,
+                borderRadius: 2,
+              }}
+            >
+              Employee Dashboard
+            </Button>
+          )}
+
           <Button
             fullWidth
             color="error"
@@ -601,6 +624,23 @@ export default function SellerLayout() {
           >
             Switch to Buyer
           </Button>
+
+          {isEmployee && (
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<BadgeRounded />}
+              onClick={handleGoToEmployeeDashboard}
+              sx={{
+                justifyContent: "flex-start",
+                py: 1.2,
+                mt: 0.5,
+                fontWeight: 700,
+              }}
+            >
+              Employee Dashboard
+            </Button>
+          )}
 
           <Button
             fullWidth

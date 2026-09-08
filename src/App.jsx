@@ -5,6 +5,7 @@ import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import AppRoutes from "./routes/AppRoutes";
 import { AuthProvider } from "./context/AuthContext";
+import { EmployeeProvider } from "./context/EmployeeContext";
 import { CartProvider } from "./context/CartContext";
 import { ModalProvider } from "./context/ModalContext";
 import { NotificationProvider } from "./context/NotificationContext";
@@ -58,15 +59,17 @@ export default function App() {
   return (
     <NotificationProvider>
       <AuthProvider>
-        <UserProvider>
-          <CartProvider>
-            <ModalProvider>
-              <AppRoutes />
-              <BackButtonHandler />
-              <AppNotifications />
-            </ModalProvider>
-          </CartProvider>
-        </UserProvider>
+        <EmployeeProvider>
+          <UserProvider>
+            <CartProvider>
+              <ModalProvider>
+                <AppRoutes />
+                <BackButtonHandler />
+                <AppNotifications />
+              </ModalProvider>
+            </CartProvider>
+          </UserProvider>
+        </EmployeeProvider>
       </AuthProvider>
     </NotificationProvider>
   );

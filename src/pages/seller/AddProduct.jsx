@@ -14,7 +14,7 @@ import {
 } from "@mui/icons-material";
 import { Link } from "react-router-dom";
 
-import ProductForm from "../../components/product/ProductForm";
+import ProductForm from "../../components/forms/ProductForm";
 import { productService } from "../../services/product.service";
 import { getErrorMessage } from "../../utils/errors";
 

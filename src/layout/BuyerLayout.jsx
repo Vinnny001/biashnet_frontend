@@ -16,9 +16,11 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import PersonIcon from "@mui/icons-material/Person";
 import SettingsIcon from "@mui/icons-material/Settings";
 import LogoutIcon from "@mui/icons-material/Logout";
+import BadgeIcon from "@mui/icons-material/Badge";
 import { APP_NAME } from "../utils/constants";
 import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../hooks/useCart";
+import { useEmployee } from "../hooks/useEmployee";
 
 const GOLD = "#d4af37";
 
@@ -42,6 +44,7 @@ export default function BuyerLayout() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { count } = useCart();
+  const { isEmployee } = useEmployee();
   const activeNav = useActiveNav();
   const [profileAnchor, setProfileAnchor] = useState(null);
 
@@ -159,6 +162,12 @@ export default function BuyerLayout() {
           <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
           Settings
         </MenuItem>
+        {isEmployee && (
+          <MenuItem onClick={() => { navigate("/employee/dashboard"); setProfileAnchor(null); }}>
+            <ListItemIcon><BadgeIcon fontSize="small" /></ListItemIcon>
+            Employee Dashboard
+          </MenuItem>
+        )}
         <Divider />
         <MenuItem onClick={() => { logout(); setProfileAnchor(null); }}>
           <ListItemIcon><LogoutIcon fontSize="small" /></ListItemIcon>

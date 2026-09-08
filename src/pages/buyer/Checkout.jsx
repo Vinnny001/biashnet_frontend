@@ -24,7 +24,7 @@ import Card from "../../components/common/Card";
 
 import { useCart } from "../../hooks/useCart";
 
-import { checkoutService } from "../../services/checkout.Service";
+import { createCheckout } from "../../services/checkout.Service";
 
 import { formatCurrency } from "../../utils/formatters";
 import { getErrorMessage } from "../../utils/errors";
@@ -268,18 +268,29 @@ export default function Checkout() {
       */
 
       const response =
-        await checkoutService.create({
+        await createCheckout({
 
           items,
 
           buyerPhone:
             values.buyerPhone ||
             values.phoneNumber ||
+            values.phone ||
             "",
 
           deliveryAddress:
-            values.deliveryAddress ||
-            null,
+            values.address
+              ? {
+                  location: values.address,
+                  phone:
+                    values.phone ||
+                    values.buyerPhone ||
+                    null,
+                  notes:
+                    values.notes ||
+                    null,
+                }
+              : null,
 
           idempotencyKey,
 

@@ -4,8 +4,10 @@ import AdminLayout from "../layout/AdminLayout";
 import BuyerLayout from "../layout/BuyerLayout";
 import GuestLayout from "../layout/GuestLayout";
 import SellerLayout from "../layout/SellerLayout";
+import EmployeeLayout from "../layout/EmployeeLayout";
 import Loading from "../components/common/Loading";
 import RoleRoute from "./RoleRoute";
+import EmployeeRoute from "./EmployeeRoute";
 
 const AdminAnalytics = lazy(() => import("../pages/admin/Analytics"));
 const AdminDashboard = lazy(() => import("../pages/admin/Dashboard"));
@@ -52,6 +54,16 @@ const SellerSettings = lazy(() => import("../pages/seller/Settings"));
 const SharedProfile = lazy(() => import("../pages/shared/Profile"));
 const SharedSettings = lazy(() => import("../pages/shared/Settings"));
 const RoleRedirect = lazy(() => import("./RoleRedirect"));
+
+const EmployeeDashboard = lazy(() => import("../pages/employee/Dashboard"));
+const EmployeeEmployees = lazy(() => import("../pages/employee/Employees"));
+const EmployeePositions = lazy(() => import("../pages/employee/Positions"));
+const EmployeeExpenses = lazy(() => import("../pages/employee/Expenses"));
+const EmployeePayroll = lazy(() => import("../pages/employee/Payroll"));
+const EmployeeApprovals = lazy(() => import("../pages/employee/Approvals"));
+const EmployeeInvestorLedger = lazy(() => import("../pages/employee/InvestorLedger"));
+const EmployeeLoans = lazy(() => import("../pages/employee/Loans"));
+const EmployeeWallet = lazy(() => import("../pages/employee/Wallet"));
 
 const pageFallback = <Loading label="Loading page..." />;
 const withSuspense = (Component) => (
@@ -113,6 +125,63 @@ export default function AppRoutes() {
           <Route path="profile" element={withSuspense(SellerProfile)} />
           <Route path="promotions" element={withSuspense(Promotions)} />
           <Route path="settings" element={withSuspense(SellerSettings)} />
+        </Route>
+      </Route>
+
+      <Route element={<EmployeeRoute />}>
+        <Route path="/employee" element={<EmployeeLayout />}>
+          <Route index element={<Navigate to="/employee/dashboard" replace />} />
+          <Route path="dashboard" element={withSuspense(EmployeeDashboard)} />
+          <Route
+            path="employees"
+            element={
+              <EmployeeRoute allow={["hr", "admin", "ceo"]}>
+                {withSuspense(EmployeeEmployees)}
+              </EmployeeRoute>
+            }
+          />
+          <Route
+            path="positions"
+            element={
+              <EmployeeRoute allow={["hr", "admin"]}>
+                {withSuspense(EmployeePositions)}
+              </EmployeeRoute>
+            }
+          />
+          <Route
+            path="expenses"
+            element={
+              <EmployeeRoute allow={["accountant", "admin"]}>
+                {withSuspense(EmployeeExpenses)}
+              </EmployeeRoute>
+            }
+          />
+          <Route
+            path="payroll"
+            element={
+              <EmployeeRoute allow={["accountant", "admin"]}>
+                {withSuspense(EmployeePayroll)}
+              </EmployeeRoute>
+            }
+          />
+          <Route
+            path="approvals"
+            element={
+              <EmployeeRoute allow={["admin", "ceo"]}>
+                {withSuspense(EmployeeApprovals)}
+              </EmployeeRoute>
+            }
+          />
+          <Route path="investors" element={withSuspense(EmployeeInvestorLedger)} />
+          <Route
+            path="loans"
+            element={
+              <EmployeeRoute allow={["accountant", "admin"]}>
+                {withSuspense(EmployeeLoans)}
+              </EmployeeRoute>
+            }
+          />
+          <Route path="wallet" element={withSuspense(EmployeeWallet)} />
         </Route>
       </Route>
 
