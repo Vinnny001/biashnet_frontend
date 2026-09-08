@@ -1,13 +1,13 @@
 // src/services/payroll.service.js
 
-import { paymentApi } from "./api";
+import { api } from "./api";
 
 export const payrollService = {
   run(employeeId) {
-    return paymentApi.post("/payroll/run", { employeeId });
+    return api.post("/payroll/run", { employeeId });
   },
 
   history(employeeId) {
-    return paymentApi.get(`/payroll/history/${employeeId}`);
+    return api.get(`/payroll/history/${employeeId}`);
   },
 };

@@ -1,6 +1,6 @@
 // src/services/employee.service.js
 
-import { paymentApi } from "./api";
+import { api } from "./api";
 
 export const employeeService = {
   /*
@@ -10,7 +10,7 @@ export const employeeService = {
   */
 
   me() {
-    return paymentApi.get("/employees/me");
+    return api.get("/employees/me");
   },
 
   /*
@@ -20,7 +20,7 @@ export const employeeService = {
   */
 
   list() {
-    return paymentApi.get("/employees");
+    return api.get("/employees");
   },
 
   /*
@@ -30,7 +30,7 @@ export const employeeService = {
   */
 
   create(payload) {
-    return paymentApi.post("/employees", payload);
+    return api.post("/employees", payload);
   },
 
   /*
@@ -40,11 +40,11 @@ export const employeeService = {
   */
 
   updateStatus(employeeId, employmentStatus) {
-    return paymentApi.patch(`/employees/${employeeId}/status`, { employmentStatus });
+    return api.patch(`/employees/${employeeId}/status`, { employmentStatus });
   },
 
   updatePosition(employeeId, positionId) {
-    return paymentApi.patch(`/employees/${employeeId}/position`, { positionId });
+    return api.patch(`/employees/${employeeId}/position`, { positionId });
   },
 
   /*
@@ -54,6 +54,6 @@ export const employeeService = {
   */
 
   requestRoleChange(employeeId, roles) {
-    return paymentApi.patch(`/employees/${employeeId}/roles`, { roles });
+    return api.patch(`/employees/${employeeId}/roles`, { roles });
   },
 };

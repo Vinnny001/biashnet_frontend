@@ -1,13 +1,13 @@
 // src/services/companyInfo.service.js
 
-import { paymentApi } from "./api";
+import { api } from "./api";
 
 export const companyInfoService = {
   get() {
-    return paymentApi.get("/company-info");
+    return api.get("/company-info");
   },
 
   update(payload) {
-    return paymentApi.patch("/company-info", payload);
+    return api.patch("/company-info", payload);
   },
 };

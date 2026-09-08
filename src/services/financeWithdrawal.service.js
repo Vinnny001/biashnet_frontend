@@ -1,17 +1,17 @@
 // src/services/financeWithdrawal.service.js
 
-import { paymentApi } from "./api";
+import { api } from "./api";
 
 export const financeWithdrawalService = {
   list() {
-    return paymentApi.get("/finance-withdrawals");
+    return api.get("/finance-withdrawals");
   },
 
   get(withdrawalId) {
-    return paymentApi.get(`/finance-withdrawals/${withdrawalId}`);
+    return api.get(`/finance-withdrawals/${withdrawalId}`);
   },
 
   create(payload) {
-    return paymentApi.post("/finance-withdrawals", payload);
+    return api.post("/finance-withdrawals", payload);
   },
 };

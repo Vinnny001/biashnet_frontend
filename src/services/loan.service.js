@@ -1,25 +1,25 @@
 // src/services/loan.service.js
 
-import { paymentApi } from "./api";
+import { api } from "./api";
 
 export const loanService = {
   listLenders() {
-    return paymentApi.get("/lenders");
+    return api.get("/lenders");
   },
 
   createLender(payload) {
-    return paymentApi.post("/lenders", payload);
+    return api.post("/lenders", payload);
   },
 
   listLoans() {
-    return paymentApi.get("/loans");
+    return api.get("/loans");
   },
 
   createLoan(payload) {
-    return paymentApi.post("/loans", payload);
+    return api.post("/loans", payload);
   },
 
   repayLoan(loanId, amount) {
-    return paymentApi.post(`/loans/${loanId}/repayments`, { amount });
+    return api.post(`/loans/${loanId}/repayments`, { amount });
   },
 };

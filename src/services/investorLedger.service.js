@@ -1,13 +1,13 @@
 // src/services/investorLedger.service.js
 
-import { paymentApi } from "./api";
+import { api } from "./api";
 
 export const investorLedgerService = {
   ledger(investorId) {
-    return paymentApi.get(`/investors/${investorId}/ledger`);
+    return api.get(`/investors/${investorId}/ledger`);
   },
 
   payout(investorId, amount) {
-    return paymentApi.post(`/investors/${investorId}/payouts`, { amount });
+    return api.post(`/investors/${investorId}/payouts`, { amount });
   },
 };

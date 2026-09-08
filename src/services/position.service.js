@@ -1,17 +1,17 @@
 // src/services/position.service.js
 
-import { paymentApi } from "./api";
+import { api } from "./api";
 
 export const positionService = {
   list() {
-    return paymentApi.get("/positions");
+    return api.get("/positions");
   },
 
   create(payload) {
-    return paymentApi.post("/positions", payload);
+    return api.post("/positions", payload);
   },
 
   update(positionId, payload) {
-    return paymentApi.patch(`/positions/${positionId}`, payload);
+    return api.patch(`/positions/${positionId}`, payload);
   },
 };

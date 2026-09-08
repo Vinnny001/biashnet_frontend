@@ -1,19 +1,19 @@
 // src/services/approval.service.js
 
-import { paymentApi } from "./api";
+import { api } from "./api";
 
 export const approvalService = {
   list(requiredLevel) {
-    return paymentApi.get("/approvals", {
+    return api.get("/approvals", {
       params: requiredLevel ? { requiredLevel } : {},
     });
   },
 
   approve(requestId) {
-    return paymentApi.post(`/approvals/${requestId}/approve`);
+    return api.post(`/approvals/${requestId}/approve`);
   },
 
   reject(requestId, reason) {
-    return paymentApi.post(`/approvals/${requestId}/reject`, { reason });
+    return api.post(`/approvals/${requestId}/reject`, { reason });
   },
 };

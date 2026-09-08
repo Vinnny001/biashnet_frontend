@@ -1,13 +1,13 @@
 // src/services/expense.service.js
 
-import { paymentApi } from "./api";
+import { api } from "./api";
 
 export const expenseService = {
   list(params = {}) {
-    return paymentApi.get("/expenses", { params });
+    return api.get("/expenses", { params });
   },
 
   create(payload) {
-    return paymentApi.post("/expenses", payload);
+    return api.post("/expenses", payload);
   },
 };
