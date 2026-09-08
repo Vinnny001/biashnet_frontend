@@ -2,14 +2,15 @@ import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   Divider,
   Stack,
   Typography,
 } from "@mui/material";
 
-import { Lock, Payment as PaymentIcon } from "@mui/icons-material";
+import { CheckCircle, ErrorOutline, Lock, Payment as PaymentIcon } from "@mui/icons-material";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import Card from "../../components/common/Card";
@@ -29,12 +30,16 @@ import { getErrorMessage } from "../../utils/errors";
 |
 | Reached after Checkout creates the order (createCheckout) but before
 | the buyer has actually paid — this page collects the M-PESA number and
-| triggers the STK push (initiatePayment). It never confirms the payment
-| itself; that happens asynchronously via M-PESA's callback. Once the
-| push is sent, the buyer is pointed at order tracking to watch status.
+| triggers the STK push (initiatePayment). Once the push is sent, it
+| polls the order itself for paymentStatus so the buyer sees the real
+| outcome (paid / failed) live, instead of a static "check your phone"
+| screen with no idea what actually happened.
 |
 |--------------------------------------------------------------------------
 */
+
+const POLL_INTERVAL_MS = 4000;
+const MAX_POLL_ATTEMPTS = 30; // ~2 minutes
 
 export default function Payment() {
   const { orderId } = useParams();
@@ -49,6 +54,16 @@ export default function Payment() {
   const [error, setError] = useState("");
   const [paymentStarted, setPaymentStarted] = useState(false);
   const [paymentResult, setPaymentResult] = useState(null);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Live status: "waiting" | "completed" | "failed" | "timeout"
+  |--------------------------------------------------------------------------
+  */
+
+  const [pollStatus, setPollStatus] = useState("waiting");
+  const pollAttempts = useRef(0);
+  const pollTimer = useRef(null);
 
   /*
   |--------------------------------------------------------------------------
@@ -79,6 +94,60 @@ export default function Payment() {
     };
   }, [order, orderId]);
 
+  /*
+  |--------------------------------------------------------------------------
+  | Poll for the real payment outcome once the STK push has been sent.
+  |--------------------------------------------------------------------------
+  */
+
+  useEffect(() => {
+    if (!paymentStarted) return;
+
+    function stopPolling() {
+      if (pollTimer.current) {
+        clearInterval(pollTimer.current);
+        pollTimer.current = null;
+      }
+    }
+
+    async function poll() {
+      pollAttempts.current += 1;
+
+      try {
+        const response = await getCheckout(orderId);
+        const latestOrder = response?.order || response;
+
+        if (latestOrder) {
+          setOrder(latestOrder);
+
+          if (latestOrder.paymentStatus === "COMPLETED") {
+            setPollStatus("completed");
+            stopPolling();
+            return;
+          }
+
+          if (["FAILED", "CANCELLED"].includes(latestOrder.paymentStatus)) {
+            setPollStatus("failed");
+            stopPolling();
+            return;
+          }
+        }
+      } catch {
+        // A transient fetch failure shouldn't stop polling — try again.
+      }
+
+      if (pollAttempts.current >= MAX_POLL_ATTEMPTS) {
+        setPollStatus("timeout");
+        stopPolling();
+      }
+    }
+
+    poll();
+    pollTimer.current = setInterval(poll, POLL_INTERVAL_MS);
+
+    return stopPolling;
+  }, [paymentStarted, orderId]);
+
   async function handlePay(event) {
     event.preventDefault();
 
@@ -97,6 +166,8 @@ export default function Payment() {
       const result = await initiatePayment({ orderId, phoneNumber: cleanPhone });
 
       setPaymentResult(result);
+      pollAttempts.current = 0;
+      setPollStatus("waiting");
       setPaymentStarted(true);
 
       /*
@@ -112,6 +183,12 @@ export default function Payment() {
     }
   }
 
+  function handleRetry() {
+    setPaymentStarted(false);
+    setPollStatus("waiting");
+    setError("");
+  }
+
   if (loadingOrder) {
     return <Loading label="Loading your order..." />;
   }
@@ -121,19 +198,68 @@ export default function Payment() {
       <Box sx={{ maxWidth: 520, mx: "auto", py: { xs: 2, md: 4 } }}>
         <Card>
           <Stack spacing={2}>
-            <Alert severity="success">M-PESA payment request sent successfully.</Alert>
+            {pollStatus === "waiting" && (
+              <>
+                <Alert severity="success">M-PESA payment request sent successfully.</Alert>
 
-            <Typography variant="h6" fontWeight={700}>
-              Check your phone
-            </Typography>
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <CircularProgress size={22} />
+                  <Typography variant="h6" fontWeight={700}>
+                    Waiting for confirmation...
+                  </Typography>
+                </Stack>
 
-            <Typography color="text.secondary">
-              An M-PESA prompt has been sent to:
-            </Typography>
+                <Typography color="text.secondary">
+                  An M-PESA prompt has been sent to:
+                </Typography>
 
-            <Typography fontWeight={700}>
-              {paymentResult?.phone || phone}
-            </Typography>
+                <Typography fontWeight={700}>
+                  {paymentResult?.phone || phone}
+                </Typography>
+
+                <Alert severity="info">
+                  Enter your M-PESA PIN on your phone to complete the payment. This page will
+                  update automatically once it's confirmed.
+                </Alert>
+              </>
+            )}
+
+            {pollStatus === "completed" && (
+              <>
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <CheckCircle color="success" fontSize="large" />
+                  <Typography variant="h6" fontWeight={700}>
+                    Payment successful
+                  </Typography>
+                </Stack>
+                <Alert severity="success">
+                  Your payment has been confirmed. Thank you for shopping with Biashnet!
+                </Alert>
+              </>
+            )}
+
+            {pollStatus === "failed" && (
+              <>
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <ErrorOutline color="error" fontSize="large" />
+                  <Typography variant="h6" fontWeight={700}>
+                    Payment did not go through
+                  </Typography>
+                </Stack>
+                <Alert severity="error">
+                  The M-PESA request failed or was cancelled. Nothing has been charged — you can
+                  try again below.
+                </Alert>
+              </>
+            )}
+
+            {pollStatus === "timeout" && (
+              <Alert severity="warning">
+                Still waiting on confirmation from M-PESA. If you completed the prompt on your
+                phone, this can take a little longer to reflect — check your order history in a
+                moment.
+              </Alert>
+            )}
 
             <Divider />
 
@@ -151,13 +277,20 @@ export default function Payment() {
               </Typography>
             </Stack>
 
-            <Alert severity="info">
-              Enter your M-PESA PIN on your phone to complete the payment.
-            </Alert>
-
-            <Button variant="contained" onClick={() => navigate(`/orders/${orderId}`)}>
-              Track my order
-            </Button>
+            {pollStatus === "failed" ? (
+              <Stack direction="row" spacing={1.5}>
+                <Button variant="contained" onClick={handleRetry}>
+                  Try again
+                </Button>
+                <Button variant="outlined" onClick={() => navigate("/orders")}>
+                  View my orders
+                </Button>
+              </Stack>
+            ) : (
+              <Button variant="contained" onClick={() => navigate("/orders")}>
+                {pollStatus === "completed" ? "View my orders" : "Track my order"}
+              </Button>
+            )}
           </Stack>
         </Card>
       </Box>

@@ -17,6 +17,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import SettingsIcon from "@mui/icons-material/Settings";
 import LogoutIcon from "@mui/icons-material/Logout";
 import BadgeIcon from "@mui/icons-material/Badge";
+import PaymentsIcon from "@mui/icons-material/Payments";
 import { APP_NAME } from "../utils/constants";
 import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../hooks/useCart";
@@ -161,6 +162,10 @@ export default function BuyerLayout() {
         <MenuItem onClick={() => { navigate("/account/settings"); setProfileAnchor(null); }}>
           <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
           Settings
+        </MenuItem>
+        <MenuItem onClick={() => { navigate("/buyer/payments"); setProfileAnchor(null); }}>
+          <ListItemIcon><PaymentsIcon fontSize="small" /></ListItemIcon>
+          Payment History
         </MenuItem>
         {isEmployee && (
           <MenuItem onClick={() => { navigate("/employee/dashboard"); setProfileAnchor(null); }}>
