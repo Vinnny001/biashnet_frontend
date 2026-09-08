@@ -16,8 +16,6 @@ import Card from "../../components/common/Card";
 import Loading from "../../components/common/Loading";
 import Input from "../../components/common/Input";
 
-import { useCart } from "../../hooks/useCart";
-
 import { getCheckout, initiatePayment } from "../../services/checkout.Service";
 
 import { formatCurrency } from "../../utils/formatters";
@@ -42,7 +40,6 @@ export default function Payment() {
   const { orderId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const cart = useCart();
 
   const [order, setOrder] = useState(location.state?.checkout || null);
   const [loadingOrder, setLoadingOrder] = useState(!location.state?.checkout);
@@ -103,9 +100,11 @@ export default function Payment() {
       setPaymentStarted(true);
 
       /*
-      Payment has been requested — the cart's job is done.
+      Checkout already marked these cart items as checked-out
+      (status: "pending", hidden from the active cart but never
+      deleted — Checkout.jsx does this the moment the order is
+      created). Nothing left to do to the cart here.
       */
-      await cart.clearCart();
     } catch (err) {
       setError(getErrorMessage(err, "Unable to start payment. Please try again."));
     } finally {

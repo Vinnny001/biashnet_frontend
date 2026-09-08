@@ -95,6 +95,25 @@ export async function removeOrderItem(orderId, listingId) {
 
 /*
 =========================================================
+REDUCE ITEM QUANTITY ON AN UNPAID ORDER
+=========================================================
+
+Buyer-only, only while unpaid, and only a reduction —
+quantity must be below what's currently on the order.
+=========================================================
+*/
+
+export async function reduceOrderItemQuantity(orderId, listingId, quantity) {
+
+    return paymentApi.patch(
+        `/orders/${orderId}/items/${listingId}`,
+        { quantity }
+    );
+}
+
+
+/*
+=========================================================
 RESOLVE PARTIAL FULFILLMENT
 =========================================================
 
@@ -153,6 +172,11 @@ export const orderService = {
     removeItem(orderId, listingId) {
 
         return removeOrderItem(orderId, listingId);
+    },
+
+    reduceItemQuantity(orderId, listingId, quantity) {
+
+        return reduceOrderItemQuantity(orderId, listingId, quantity);
     },
 
     resolvePartial(orderId, decision) {

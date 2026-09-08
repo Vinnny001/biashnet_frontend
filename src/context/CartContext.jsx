@@ -156,9 +156,10 @@ export function CartProvider({ children }) {
       addItem,
       updateQuantity,
       removeItem,
-      clearCart
+      clearCart,
+      refresh: refreshServerCart
     }),
-    [addItem, clearCart, items, loading, removeItem, updateQuantity]
+    [addItem, clearCart, items, loading, refreshServerCart, removeItem, updateQuantity]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Alert, Box, Button, Chip, IconButton, Stack, Typography, alpha } from "@mui/material";
-import { DeleteOutline } from "@mui/icons-material";
+import { DeleteOutline, RemoveCircleOutline } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 
 import Card from "../common/Card";
@@ -61,6 +61,20 @@ export default function IncompleteOrderCard({ order: summary, onChange }) {
         return;
       }
 
+      await loadOrder();
+      onChange?.();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setBusyItemId(null);
+    }
+  }
+
+  async function handleReduceQuantity(listingId, currentQuantity) {
+    try {
+      setBusyItemId(listingId);
+      setError("");
+      await orderService.reduceItemQuantity(orderId, listingId, currentQuantity - 1);
       await loadOrder();
       onChange?.();
     } catch (err) {
@@ -133,14 +147,26 @@ export default function IncompleteOrderCard({ order: summary, onChange }) {
                 </Typography>
               </Box>
 
-              <IconButton
-                aria-label="Remove item"
-                onClick={() => handleRemoveItem(item.listingId)}
-                disabled={busyItemId === item.listingId || loading}
-                size="small"
-              >
-                <DeleteOutline fontSize="small" />
-              </IconButton>
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                {item.quantity > 1 && (
+                  <IconButton
+                    aria-label="Reduce quantity by 1"
+                    onClick={() => handleReduceQuantity(item.listingId, item.quantity)}
+                    disabled={busyItemId === item.listingId || loading}
+                    size="small"
+                  >
+                    <RemoveCircleOutline fontSize="small" />
+                  </IconButton>
+                )}
+                <IconButton
+                  aria-label="Remove item"
+                  onClick={() => handleRemoveItem(item.listingId)}
+                  disabled={busyItemId === item.listingId || loading}
+                  size="small"
+                >
+                  <DeleteOutline fontSize="small" />
+                </IconButton>
+              </Stack>
             </Stack>
           ))}
         </Stack>

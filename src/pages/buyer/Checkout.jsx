@@ -25,6 +25,7 @@ import Card from "../../components/common/Card";
 import { useCart } from "../../hooks/useCart";
 
 import { createCheckout } from "../../services/checkout.Service";
+import { cartService } from "../../services/cart.service";
 
 import { formatCurrency } from "../../utils/formatters";
 import { describeCheckoutError } from "../../utils/errors";
@@ -339,6 +340,34 @@ export default function Checkout() {
       setCheckoutCreated(
         true
       );
+
+
+      /*
+      ======================================================
+      MARK CART ITEMS AS CHECKED OUT (NOT DELETED)
+      ======================================================
+      |
+      | These items now belong to an order — hide them from
+      | the active cart view, but keep the row (status:
+      | "pending" instead of "active") so cart history stays
+      | available for things like a preference/recommendation
+      | algorithm later. Never block navigation to payment on
+      | this — it's cart housekeeping, not the purchase itself.
+      |
+      ======================================================
+      */
+
+      await Promise.allSettled(
+        cart.items
+          .filter((item) => item.id)
+          .map((item) =>
+            cartService.initiateCheckout(item.id, {
+              orderId: response.orderId,
+            })
+          )
+      );
+
+      cart.refresh?.();
 
 
       /*
