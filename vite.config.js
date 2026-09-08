@@ -6,8 +6,15 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
   return {
-    base: "./",
-    
+    /*
+     * Must be absolute, not "./" — with a client-side router and a
+     * SPA rewrite (see vercel.json), a hard refresh on a nested route
+     * like /employee/dashboard serves index.html at that URL; a
+     * relative base would then resolve "./assets/x.js" against
+     * /employee/ instead of the real asset root, 404ing every asset.
+     */
+    base: "/",
+
     plugins: [react()],
     resolve: {
       alias: {
