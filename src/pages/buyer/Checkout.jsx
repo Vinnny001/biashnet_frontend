@@ -27,7 +27,7 @@ import { useCart } from "../../hooks/useCart";
 import { createCheckout } from "../../services/checkout.Service";
 
 import { formatCurrency } from "../../utils/formatters";
-import { getErrorMessage } from "../../utils/errors";
+import { describeCheckoutError } from "../../utils/errors";
 
 
 /*
@@ -371,8 +371,9 @@ export default function Checkout() {
 
 
       setError(
-        getErrorMessage(
+        describeCheckoutError(
           err,
+          cart.items,
           "Could not create your checkout. Please try again."
         )
       );
