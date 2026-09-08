@@ -9,20 +9,25 @@ export default function OrderDetails({ order }) {
   return (
     <Card>
       <Stack spacing={2}>
-        <Typography variant="h5">{order.reference || "Order details"}</Typography>
-        <Typography color="text.secondary">Status: {order.status || "pending"}</Typography>
+        <Typography variant="h5">{order.reference || `Order ${order.id || order.orderId}`}</Typography>
         <Divider />
         {(order.items || []).map((item) => (
-          <Stack key={item.id || item.productId} direction="row" justifyContent="space-between">
-            <Typography>{item.name}</Typography>
-            <Typography>{formatCurrency(item.price * (item.quantity || 1))}</Typography>
+          <Stack key={item.listingId} direction="row" justifyContent="space-between">
+            <div>
+              <Typography>{item.title}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Qty {item.quantity}
+              </Typography>
+            </div>
+            <Typography>{formatCurrency(item.itemTotal)}</Typography>
           </Stack>
         ))}
         <Divider />
         <Typography variant="h6" color="primary.main">
-          Total: {formatCurrency(order.total)}
+          Total: {formatCurrency(order.buyerTotal)}
         </Typography>
-        <OrderTimeline steps={order.timeline || []} />
+        <Divider />
+        <OrderTimeline status={order.status} />
       </Stack>
     </Card>
   );

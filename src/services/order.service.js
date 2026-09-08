@@ -77,6 +77,24 @@ export async function cancelOrder(orderId) {
 
 /*
 =========================================================
+REMOVE ITEM FROM AN UNPAID ORDER
+=========================================================
+
+Buyer-only, only while the order is still unpaid.
+Removing the last item cancels the whole order.
+=========================================================
+*/
+
+export async function removeOrderItem(orderId, listingId) {
+
+    return paymentApi.delete(
+        `/orders/${orderId}/items/${listingId}`
+    );
+}
+
+
+/*
+=========================================================
 RESOLVE PARTIAL FULFILLMENT
 =========================================================
 
@@ -130,6 +148,11 @@ export const orderService = {
     cancel(orderId) {
 
         return cancelOrder(orderId);
+    },
+
+    removeItem(orderId, listingId) {
+
+        return removeOrderItem(orderId, listingId);
     },
 
     resolvePartial(orderId, decision) {

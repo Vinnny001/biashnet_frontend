@@ -12,7 +12,7 @@ export default function OrderCard({ order }) {
         <Stack>
           <Typography variant="h6">{order.reference || `Order ${id}`}</Typography>
           <Typography color="text.secondary">{formatDate(order.createdAt)}</Typography>
-          <Typography color="primary.main">{formatCurrency(order.total)}</Typography>
+          <Typography color="primary.main">{formatCurrency(order.buyerTotal ?? order.total)}</Typography>
         </Stack>
         <Stack alignItems={{ xs: "stretch", sm: "flex-end" }} spacing={1}>
           <Typography>{order.status || "pending"}</Typography>
