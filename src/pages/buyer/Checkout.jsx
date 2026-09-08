@@ -207,7 +207,22 @@ export default function Checkout() {
         cart.items.map(
           (item) => {
 
+            /*
+            For a logged-in buyer, cart items come from the
+            server cart (CartContext's normalizeServerItem):
+            item.id is the CART ENTRY's own document id,
+            item.productId is the actual product's id — using
+            item.id here was sending the wrong id to checkout,
+            which always looked like "product no longer exists"
+            since that id never matches any real product.
+            Guest/local cart items have no separate productId,
+            and store the real product id as item.id instead,
+            so productId is checked first but id is still a
+            valid fallback.
+            */
+
             const listingId =
+              item.productId ||
               item.listingId ||
               item.id;
 
