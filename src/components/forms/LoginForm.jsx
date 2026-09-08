@@ -2,7 +2,7 @@ import { Box, Button, FormControlLabel, Radio, RadioGroup, Stack, Typography } f
 import { useState } from "react";
 import Input from "../common/Input";
 
-const ACCOUNT_TYPE_LABELS = { buyer: "Buyer", seller: "Seller", investor: "Investor", admin: "Admin" };
+const ACCOUNT_TYPE_LABELS = { buyer: "Buyer", seller: "Seller", investor: "Investor", admin: "Admin", employee: "Work Account" };
 
 export default function LoginForm({ step, accountTypes = [], onCheckEmail, onLogin, onVerifyOtp, onBack, loading = false }) {
   const [email, setEmail] = useState("");

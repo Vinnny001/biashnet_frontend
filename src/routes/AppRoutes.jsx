@@ -65,6 +65,7 @@ const EmployeeLogistics = lazy(() => import("../pages/employee/Logistics"));
 const EmployeeInvestorLedger = lazy(() => import("../pages/employee/InvestorLedger"));
 const EmployeeLoans = lazy(() => import("../pages/employee/Loans"));
 const EmployeeWallet = lazy(() => import("../pages/employee/Wallet"));
+const EmployeeReports = lazy(() => import("../pages/employee/Reports"));
 
 const pageFallback = <Loading label="Loading page..." />;
 const withSuspense = (Component) => (
@@ -191,6 +192,7 @@ export default function AppRoutes() {
             }
           />
           <Route path="wallet" element={withSuspense(EmployeeWallet)} />
+          <Route path="reports" element={withSuspense(EmployeeReports)} />
         </Route>
       </Route>
 
