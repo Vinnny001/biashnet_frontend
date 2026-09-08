@@ -29,6 +29,7 @@ const Home = lazy(() => import("../pages/buyer/Home"));
 const Notifications = lazy(() => import("../pages/buyer/Notifications"));
 const BuyerOrders = lazy(() => import("../pages/buyer/Orders"));
 const OrderTracking = lazy(() => import("../pages/buyer/OrderTracking"));
+const Payment = lazy(() => import("../pages/buyer/Payment"));
 const ProductDetails = lazy(() => import("../pages/buyer/ProductDetails"));
 const Products = lazy(() => import("../pages/buyer/Products"));
 const BuyerProfile = lazy(() => import("../pages/buyer/Profile"));
@@ -104,6 +105,7 @@ export default function AppRoutes() {
         <Route element={<BuyerLayout />}>
           <Route path="/buyer/home" element={withSuspense(Home)} />
           <Route path="/checkout" element={withSuspense(Checkout)} />
+          <Route path="/buyer/payment/:orderId" element={withSuspense(Payment)} />
           <Route path="/orders" element={withSuspense(BuyerOrders)} />
           <Route path="/orders/:id" element={withSuspense(OrderTracking)} />
           <Route path="/chat" element={withSuspense(BuyerChat)} />
