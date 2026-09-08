@@ -6,8 +6,15 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   InputAdornment,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   TextField,
   Typography,
 } from "@mui/material";
@@ -40,6 +47,8 @@ export default function SellerOrders() {
   const [statusFilter, setStatusFilter] =
     useState("all");
 
+  const [subOrders, setSubOrders] = useState([]);
+
   const sellerId = user?.id || user?.uid;
 
   const fetchOrders = useCallback(async () => {
@@ -52,24 +61,23 @@ export default function SellerOrders() {
       setLoading(true);
       setError("");
 
-      /*
-       * Eventually this should preferably become:
-       *
-       * orderService.list({ sellerId })
-       *
-       * with the backend enforcing seller ownership.
-       */
       const response = await orderService.list({
         sellerId,
       });
 
-      const data =
-        response?.data?.data ||
-        response?.data ||
-        [];
+      const data = response?.orders || [];
 
       setOrders(
         Array.isArray(data) ? data : []
+      );
+
+      const subOrderPayload =
+        await orderService.getMySubOrders();
+
+      setSubOrders(
+        Array.isArray(subOrderPayload?.subOrders)
+          ? subOrderPayload.subOrders
+          : []
       );
     } catch (err) {
       console.error(
@@ -87,40 +95,17 @@ export default function SellerOrders() {
     fetchOrders();
   }, [fetchOrders]);
 
-  async function handleStatusChange(
-    orderId,
-    newStatus
-  ) {
-    try {
-      setError("");
-
-      await orderService.update(
-        orderId,
-        {
-          status: newStatus,
-          orderStatus: newStatus,
-        }
-      );
-
-      setOrders((current) =>
-        current.map((order) =>
-          (order.id || order._id) === orderId
-            ? {
-                ...order,
-                status: newStatus,
-                orderStatus: newStatus,
-              }
-            : order
-        )
-      );
-    } catch (err) {
-      console.error(
-        "Failed to update order:",
-        err
-      );
-
-      setError(getErrorMessage(err));
-    }
+  /*
+   * Sellers no longer set order status directly — fulfillment
+   * is logistics-managed now (drop items at Biashnet, the
+   * logistics/supply-chain manager confirms receipt). There's
+   * no backend endpoint for this anymore; keep the handler so
+   * OrderTable's UI doesn't throw, but make the new flow clear.
+   */
+  function handleStatusChange() {
+    setError(
+      "Order status is now updated by Biashnet logistics once you drop off your item(s) — see your sub-order status below."
+    );
   }
 
   const filteredOrders = useMemo(() => {
@@ -328,6 +313,86 @@ export default function SellerOrders() {
           color="success.main"
         />
       </Box>
+
+      {/* =============================
+          MY SUB-ORDERS (drop-off status)
+      ============================== */}
+
+      <Card
+        sx={{
+          borderRadius: 2.5,
+          boxShadow: "none",
+          border: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        <CardContent>
+          <Typography fontWeight={800} sx={{ mb: 1 }}>
+            Drop-off status
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Deliver your item(s) to Biashnet within the window below — the logistics team
+            confirms receipt there, not at the buyer's address.
+          </Typography>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Order</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Drop-off deadline</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {subOrders.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={3}>
+                      <Typography color="text.secondary">
+                        No sub-orders yet.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+                {subOrders.map((subOrder) => {
+                  const deadline = subOrder.dropoffDeadline?._seconds
+                    ? new Date(subOrder.dropoffDeadline._seconds * 1000)
+                    : subOrder.dropoffDeadline
+                    ? new Date(subOrder.dropoffDeadline)
+                    : null;
+
+                  const overdue =
+                    subOrder.status === "PENDING_DROPOFF" &&
+                    deadline &&
+                    deadline.getTime() < Date.now();
+
+                  const statusColor = {
+                    PENDING_DROPOFF: overdue ? "error" : "warning",
+                    AT_BIASHNET: "info",
+                    NON_COMPLIANT: "error",
+                    RELEASED: "success",
+                    REFUNDED: "default",
+                    CANCELLED: "default",
+                  }[subOrder.status] || "default";
+
+                  return (
+                    <TableRow key={subOrder.subOrderId}>
+                      <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>
+                        {subOrder.orderId}
+                      </TableCell>
+                      <TableCell>
+                        <Chip size="small" label={subOrder.status} color={statusColor} />
+                      </TableCell>
+                      <TableCell>
+                        {deadline ? deadline.toLocaleString() : "—"}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
 
       {/* =============================
           SEARCH + FILTER

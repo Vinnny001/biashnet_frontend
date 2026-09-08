@@ -61,6 +61,7 @@ const EmployeePositions = lazy(() => import("../pages/employee/Positions"));
 const EmployeeExpenses = lazy(() => import("../pages/employee/Expenses"));
 const EmployeePayroll = lazy(() => import("../pages/employee/Payroll"));
 const EmployeeApprovals = lazy(() => import("../pages/employee/Approvals"));
+const EmployeeLogistics = lazy(() => import("../pages/employee/Logistics"));
 const EmployeeInvestorLedger = lazy(() => import("../pages/employee/InvestorLedger"));
 const EmployeeLoans = lazy(() => import("../pages/employee/Loans"));
 const EmployeeWallet = lazy(() => import("../pages/employee/Wallet"));
@@ -169,6 +170,14 @@ export default function AppRoutes() {
             element={
               <EmployeeRoute allow={["admin", "ceo"]}>
                 {withSuspense(EmployeeApprovals)}
+              </EmployeeRoute>
+            }
+          />
+          <Route
+            path="logistics"
+            element={
+              <EmployeeRoute allow={["logistics", "admin"]}>
+                {withSuspense(EmployeeLogistics)}
               </EmployeeRoute>
             }
           />
