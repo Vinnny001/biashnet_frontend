@@ -9,6 +9,7 @@ import { authService } from "../services/auth.service";
 import { STORAGE_KEYS, USER_ROLES } from "../utils/constants";
 import { getErrorMessage } from "../utils/errors";
 import { storage } from "../utils/storage";
+import { attachPushListeners, flushPendingDeviceToken, registerPushNotifications } from "../services/push";
 
 export const AuthContext = createContext(null);
 
@@ -114,8 +115,21 @@ export function AuthProvider({ children }) {
 
     const onUnauthorized = () => clearSession();
     window.addEventListener("biashnet:unauthorized", onUnauthorized);
+
+    // No-ops entirely on web — only does anything inside the Android app.
+    attachPushListeners({ isAuthenticated: () => Boolean(storage.get(STORAGE_KEYS.TOKEN)) });
+    registerPushNotifications();
+
     return () => window.removeEventListener("biashnet:unauthorized", onUnauthorized);
   }, [clearSession, refreshUser]);
+
+  // Once a session exists, sync a device token the "registration" event
+  // may have already delivered before login finished.
+  useEffect(() => {
+    if (user && token) {
+      flushPendingDeviceToken();
+    }
+  }, [user, token]);
 
   const value = useMemo(
     () => ({
