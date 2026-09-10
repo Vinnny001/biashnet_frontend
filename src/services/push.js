@@ -17,6 +17,15 @@ import { api } from "./api";
 |--------------------------------------------------------------------------
 */
 
+/*
+ * Must match the channelId the backend sends in every FCM message's
+ * android.notification.channelId (see pushService.js) — Android routes
+ * an incoming push through whichever channel ID is on the payload, and
+ * a channel that doesn't exist yet on the device falls back to its
+ * default (IMPORTANCE_DEFAULT), which never shows a heads-up banner.
+ */
+export const NOTIFICATION_CHANNEL_ID = "biashnet_default";
+
 let registered = false;
 
 export async function registerPushNotifications() {
@@ -25,6 +34,27 @@ export async function registerPushNotifications() {
   registered = true;
 
   try {
+    /*
+     * IMPORTANCE_HIGH (4) — anything lower (the Android default is
+     * IMPORTANCE_DEFAULT = 3) delivers the notification silently into
+     * the shade instead of popping up as a heads-up banner. Must be
+     * created before the first notification arrives; changing an
+     * existing channel's importance later has no effect (Android only
+     * honors it at creation), so if a lower-importance channel with
+     * this same ID was ever created on a device before this shipped,
+     * that device needs the app reinstalled or the channel deleted by
+     * hand in system settings to pick up the new importance.
+     */
+    await PushNotifications.createChannel({
+      id: NOTIFICATION_CHANNEL_ID,
+      name: "Biashnet Notifications",
+      description: "Order, payment, and delivery updates",
+      importance: 4,
+      visibility: 1,
+      sound: "default",
+      vibration: true,
+    });
+
     let permission = await PushNotifications.checkPermissions();
 
     if (permission.receive === "prompt") {

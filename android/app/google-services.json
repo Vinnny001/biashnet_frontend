@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "194190440580",
+    "project_id": "golden-biashnet",
+    "storage_bucket": "golden-biashnet.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:194190440580:android:a9d51891e93490544daad1",
+        "android_client_info": {
+          "package_name": "com.biashnet.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "194190440580-89a8pop813killafm2vvfsbbha2mneq8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyABxFaBHXj03fuGLykWth91GbtMZTK4N0U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "194190440580-89a8pop813killafm2vvfsbbha2mneq8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
