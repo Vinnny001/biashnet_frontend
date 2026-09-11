@@ -16,12 +16,11 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import PersonIcon from "@mui/icons-material/Person";
 import SettingsIcon from "@mui/icons-material/Settings";
 import LogoutIcon from "@mui/icons-material/Logout";
-import BadgeIcon from "@mui/icons-material/Badge";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import { APP_NAME } from "../utils/constants";
 import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../hooks/useCart";
-import { useEmployee } from "../hooks/useEmployee";
+import AccountSwitcher from "../components/common/AccountSwitcher";
 
 const GOLD = "#d4af37";
 
@@ -45,7 +44,6 @@ export default function BuyerLayout() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { count } = useCart();
-  const { isEmployee } = useEmployee();
   const activeNav = useActiveNav();
   const [profileAnchor, setProfileAnchor] = useState(null);
 
@@ -167,12 +165,13 @@ export default function BuyerLayout() {
           <ListItemIcon><PaymentsIcon fontSize="small" /></ListItemIcon>
           Payment History
         </MenuItem>
-        {isEmployee && (
-          <MenuItem onClick={() => { navigate("/employee/dashboard"); setProfileAnchor(null); }}>
-            <ListItemIcon><BadgeIcon fontSize="small" /></ListItemIcon>
-            Employee Dashboard
-          </MenuItem>
-        )}
+        {/*
+          No direct jump into the work account from here — a buyer/seller
+          session is not OTP-verified, so entering an employee/admin/investor
+          area has to go through a fresh sign-in. AccountSwitcher shows those
+          accounts (locked) and routes to login instead.
+        */}
+        <AccountSwitcher onDone={() => setProfileAnchor(null)} />
         <Divider />
         <MenuItem onClick={() => { logout(); setProfileAnchor(null); }}>
           <ListItemIcon><LogoutIcon fontSize="small" /></ListItemIcon>

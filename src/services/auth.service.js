@@ -17,6 +17,15 @@ export const authService = {
     return api.get("/auth/me");
   },
 
+  /*
+   * Switch the active account on the current session. The backend only
+   * allows buyer <-> seller here; admin/investor/work accounts require a
+   * fresh sign-in so the OTP step can't be skipped.
+   */
+  switchAccount(accountType) {
+    return api.post("/auth/switch-account", { accountType });
+  },
+
   forgotPassword(email) {
     return api.post("/auth/forgot-password", { email });
   },

@@ -5,6 +5,7 @@ import BuyerLayout from "../layout/BuyerLayout";
 import GuestLayout from "../layout/GuestLayout";
 import SellerLayout from "../layout/SellerLayout";
 import EmployeeLayout from "../layout/EmployeeLayout";
+import InvestorLayout from "../layout/InvestorLayout";
 import Loading from "../components/common/Loading";
 import RoleRoute from "./RoleRoute";
 import EmployeeRoute from "./EmployeeRoute";
@@ -69,6 +70,8 @@ const EmployeeLoans = lazy(() => import("../pages/employee/Loans"));
 const EmployeeWallet = lazy(() => import("../pages/employee/Wallet"));
 const EmployeeReports = lazy(() => import("../pages/employee/Reports"));
 
+const InvestorDashboard = lazy(() => import("../pages/investor/Dashboard"));
+
 const pageFallback = <Loading label="Loading page..." />;
 const withSuspense = (Component) => (
   <Suspense fallback={pageFallback}>
@@ -92,9 +95,17 @@ export default function AppRoutes() {
         <Route path="/500" element={withSuspense(ServerError)} />
       </Route>
 
+      {/*
+        ROOT
+        Logged out -> Landing. Logged in -> whichever home matches the
+        account they signed in as (see routes/RoleRedirect.jsx). This
+        deliberately sits outside BuyerLayout so the landing page isn't
+        wrapped in buyer chrome (cart badge, buyer nav) for visitors.
+      */}
+      <Route path="/" element={withSuspense(RoleRedirect)} />
+
 <Route element={<BuyerLayout />}>
   {/* PUBLIC MARKETPLACE */}
-  <Route index element={withSuspense(Home)} />
   <Route path="/products" element={withSuspense(Products)} />
   <Route path="/products/:id" element={withSuspense(ProductDetails)} />
   <Route path="/search" element={withSuspense(SearchResults)} />
@@ -197,6 +208,13 @@ export default function AppRoutes() {
           />
           <Route path="wallet" element={withSuspense(EmployeeWallet)} />
           <Route path="reports" element={withSuspense(EmployeeReports)} />
+        </Route>
+      </Route>
+
+      <Route element={<RoleRoute allow={["investor", "admin"]} />}>
+        <Route path="/investor" element={<InvestorLayout />}>
+          <Route index element={<Navigate to="/investor/dashboard" replace />} />
+          <Route path="dashboard" element={withSuspense(InvestorDashboard)} />
         </Route>
       </Route>
 

@@ -295,6 +295,15 @@ export const STORAGE_KEYS = {
   CART:
     "biashnet.cart",
 
+  /*
+   * Which employee role's view a work-account session is currently in
+   * (an employee can hold several — e.g. techlead + logistics). This is
+   * a VIEW preference only: every backend route still authorizes against
+   * the real roles on employees/{uid}, so changing it can't grant access.
+   */
+  EMPLOYEE_ROLE:
+    "biashnet.employeeRole",
+
 };
 
 

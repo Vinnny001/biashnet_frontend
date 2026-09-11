@@ -89,6 +89,22 @@ export function AuthProvider({ children }) {
   },
   [persistSession]
 );
+  /*
+   * Swap the active account (buyer <-> seller) without re-authenticating.
+   * The backend rejects privileged targets, so a rejection here is
+   * expected behaviour, not a bug — surface its message to the user.
+   */
+  const switchAccount = useCallback(
+    async (accountType) => {
+      setError("");
+      const payload = await authService.switchAccount(accountType);
+      const session = extractAuthPayload(payload);
+      persistSession(session.token, session.user);
+      return session.user;
+    },
+    [persistSession]
+  );
+
   const signup = useCallback(
     async (values) => {
       setError("");
@@ -145,9 +161,10 @@ export function AuthProvider({ children }) {
       logout,
       refreshUser,
       setUser,
-      completeLogin
+      completeLogin,
+      switchAccount
     }),
-    [error, loading, login, logout, refreshUser, signup, token, user, completeLogin]
+    [error, loading, login, logout, refreshUser, signup, token, user, completeLogin, switchAccount]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

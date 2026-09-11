@@ -13,8 +13,10 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  MenuItem,
   Paper,
   Stack,
+  TextField,
   Toolbar,
   Typography,
 } from "@mui/material";
@@ -42,6 +44,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../hooks/useAuth";
 import { useEmployee } from "../hooks/useEmployee";
+import { ROLE_LABELS } from "../utils/employeeRoles";
 
 const NAV_ITEMS = [
   { label: "Dashboard", to: "/employee/dashboard", icon: DashboardRounded },
@@ -63,13 +66,23 @@ export default function EmployeeLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { employee, hasRole } = useEmployee();
+  const { employee, hasRole, activeRole, availableRoles, setActiveRole } = useEmployee();
 
   const currentPath = location.pathname;
 
-  const visibleItems = NAV_ITEMS.filter(
-    (item) => !item.roles || hasRole(...item.roles)
-  );
+  /*
+   * The nav follows the role they're currently in, not everything they
+   * could ever reach — that's what makes each role a distinct view. Admin
+   * is the exception: it's the catch-all role, so it keeps full nav.
+   * hasRole() still gates each item, so a stale activeRole can't widen
+   * access, and the routes themselves are role-gated regardless.
+   */
+  const visibleItems = NAV_ITEMS.filter((item) => {
+    if (!item.roles) return true;
+    if (!hasRole(...item.roles)) return false;
+    if (!activeRole || activeRole === "admin") return true;
+    return item.roles.includes(activeRole);
+  });
 
   const isActive = (to) =>
     currentPath === to || currentPath.startsWith(`${to}/`);
@@ -214,13 +227,31 @@ export default function EmployeeLayout() {
               </Avatar>
               <Box sx={{ minWidth: 0 }}>
                 <Typography fontWeight={800} noWrap>
-                  {positionLabel}
+                  {ROLE_LABELS[activeRole] || positionLabel}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   {employee?.employmentStatus === "active" ? "Active" : "Employee Account"}
                 </Typography>
               </Box>
             </Stack>
+
+            {/* Only meaningful when they hold more than one role */}
+            {availableRoles.length > 1 && (
+              <TextField
+                select
+                size="small"
+                fullWidth
+                value={activeRole || ""}
+                onChange={(event) => setActiveRole(event.target.value)}
+                sx={{ mt: 1.5 }}
+              >
+                {availableRoles.map((role) => (
+                  <MenuItem key={role} value={role}>
+                    {ROLE_LABELS[role] || role}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
           </Box>
 
           <Typography variant="overline" color="text.secondary" sx={{ px: 1.5, fontWeight: 800 }}>

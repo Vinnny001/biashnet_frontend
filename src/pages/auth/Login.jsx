@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Alert, Box, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import Card from "../../components/common/Card";
 import LoginForm from "../../components/forms/LoginForm";
 import { useAuth } from "../../hooks/useAuth";
 import { getErrorMessage } from "../../utils/errors";
-import { API_BASE_URL } from "../../utils/constants";
+import { API_BASE_URL, STORAGE_KEYS } from "../../utils/constants";
+import { storage } from "../../utils/storage";
+import { ROLE_LABELS } from "../../utils/employeeRoles";
 
 
 import { ROLE_HOME } from "../../utils/roleRoutes";
@@ -37,6 +39,42 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Work accounts can hold several roles (e.g. techlead + logistics) —
+  // they pick which one to enter before landing on a dashboard.
+  const [employeeRoleChoices, setEmployeeRoleChoices] = useState([]);
+
+  /*
+   * Sends the user wherever their account type belongs, EXCEPT a work
+   * account with more than one role — that stops here to ask which role
+   * they want to work as first.
+   */
+  function finishLogin(session) {
+    const nextUser = session?.user;
+
+    if (nextUser?.role === "employee") {
+      const roles = Object.entries(nextUser.employeeRoles || {})
+        .filter(([, granted]) => granted === true)
+        .map(([role]) => role);
+
+      if (roles.length > 1) {
+        setEmployeeRoleChoices(roles);
+        setStep("employeeRole");
+        return;
+      }
+
+      if (roles.length === 1) {
+        storage.set(STORAGE_KEYS.EMPLOYEE_ROLE, roles[0]);
+      }
+    }
+
+    navigate(ROLE_HOME[nextUser?.role] || "/", { replace: true });
+  }
+
+  function handlePickEmployeeRole(role) {
+    storage.set(STORAGE_KEYS.EMPLOYEE_ROLE, role);
+    navigate(ROLE_HOME.employee, { replace: true });
+  }
+
   
 
   async function handleCheckEmail(value) {
@@ -66,8 +104,7 @@ export default function Login() {
 
     if (result.skipOtp) {
       await completeLogin(result);
-      const destination = ROLE_HOME[result.user?.role] || "/";
-      navigate(destination, { replace: true });
+      finishLogin(result);
       return;
     }
 
@@ -84,9 +121,8 @@ export default function Login() {
     setLoading(true);
     setError("");
     const session = await postJson("/auth/login/verify-otp", { email, code });
-    await completeLogin(session); // or completeLogin — see point 2 below
-    const destination = ROLE_HOME[session.user?.role] || "/";
-    navigate(destination, { replace: true });
+    await completeLogin(session);
+    finishLogin(session);
   } catch (err) {
     setError(getErrorMessage(err, "Verification failed."));
   } finally {
@@ -103,20 +139,46 @@ export default function Login() {
     <Box sx={{ maxWidth: 460, mx: "auto" }}>
       <Card>
         <Stack spacing={2}>
-          <Typography variant="h4">Login</Typography>
-          {error ? <Alert severity="error">{error}</Alert> : null}
-          <LoginForm
-            step={step}
-            accountTypes={accountTypes}
-            loading={loading}
-            onCheckEmail={handleCheckEmail}
-            onLogin={handleLogin}
-            onVerifyOtp={handleVerifyOtp}
-            onBack={handleBack}
-          />
-          <Typography color="text.secondary">
-            New here? <Link to="/signup">Create an account</Link>
+          <Typography variant="h4">
+            {step === "employeeRole" ? "Choose your role" : "Login"}
           </Typography>
+          {error ? <Alert severity="error">{error}</Alert> : null}
+
+          {step === "employeeRole" ? (
+            <Stack spacing={2}>
+              <Typography color="text.secondary">
+                You hold more than one role. Pick the one you want to work as —
+                you can switch at any time from your dashboard.
+              </Typography>
+
+              {employeeRoleChoices.map((role) => (
+                <Button
+                  key={role}
+                  variant="outlined"
+                  size="large"
+                  onClick={() => handlePickEmployeeRole(role)}
+                  sx={{ justifyContent: "flex-start", fontWeight: 700 }}
+                >
+                  {ROLE_LABELS[role] || role}
+                </Button>
+              ))}
+            </Stack>
+          ) : (
+            <>
+              <LoginForm
+                step={step}
+                accountTypes={accountTypes}
+                loading={loading}
+                onCheckEmail={handleCheckEmail}
+                onLogin={handleLogin}
+                onVerifyOtp={handleVerifyOtp}
+                onBack={handleBack}
+              />
+              <Typography color="text.secondary">
+                New here? <Link to="/signup">Create an account</Link>
+              </Typography>
+            </>
+          )}
         </Stack>
       </Card>
     </Box>
