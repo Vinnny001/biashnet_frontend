@@ -35,3 +35,10 @@ Thumbs.db
 
 # FILES
 src/services/cloudinary.service.js
+
+# Firebase / Android
+# Downloaded per-developer from the Firebase console (Project settings ->
+# your apps -> google-services.json) and dropped in android/app/.
+# Never committed - GitHub secret scanning flags the API key inside it.
+android/app/google-services.json
+google-services.json
