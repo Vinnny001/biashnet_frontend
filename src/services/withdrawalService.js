@@ -1,4 +1,17 @@
-import api from "./api";
+import { paymentApi } from "./api";
+
+
+/*
+=========================================================
+WITHDRAWALS LIVE ON THE PAYMENT SERVICE
+=========================================================
+
+/api/withdrawals is mounted by biashnet-mpesa-api, not the
+main backend — it moves real money out of the seller's
+marketplace wallet via M-PESA B2C. Calling it through the
+main `api` client 404s.
+=========================================================
+*/
 
 
 /*

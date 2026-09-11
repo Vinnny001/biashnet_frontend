@@ -54,6 +54,7 @@ const SellerProfile = lazy(() => import("../pages/seller/Profile"));
 const Promotions = lazy(() => import("../pages/seller/Promotions"));
 const SellerOrders = lazy(() => import("../pages/seller/SellerOrders"));
 const SellerSettings = lazy(() => import("../pages/seller/Settings"));
+const SellerWallet = lazy(() => import("../pages/seller/Wallet"));
 const SharedProfile = lazy(() => import("../pages/shared/Profile"));
 const SharedSettings = lazy(() => import("../pages/shared/Settings"));
 const RoleRedirect = lazy(() => import("./RoleRedirect"));
@@ -137,6 +138,7 @@ export default function AppRoutes() {
           <Route path="products/new" element={withSuspense(AddProduct)} />
           <Route path="products/:id/edit" element={withSuspense(EditProduct)} />
           <Route path="orders" element={withSuspense(SellerOrders)} />
+          <Route path="wallet" element={withSuspense(SellerWallet)} />
           <Route path="analytics" element={withSuspense(SellerAnalytics)} />
           <Route path="chat" element={withSuspense(SellerChat)} />
           <Route path="profile" element={withSuspense(SellerProfile)} />

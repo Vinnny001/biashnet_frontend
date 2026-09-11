@@ -22,6 +22,7 @@ import {
 } from "@mui/material";
 
 import {
+  AccountBalanceWalletRounded,
   AddRounded,
   AnalyticsRounded,
   BadgeRounded,
@@ -67,6 +68,11 @@ const sellerLinks = [
     label: "Orders",
     to: "/seller/orders",
     icon: ShoppingBagRounded,
+  },
+  {
+    label: "Wallet",
+    to: "/seller/wallet",
+    icon: AccountBalanceWalletRounded,
   },
   {
     label: "Analytics",
@@ -121,10 +127,15 @@ const mobileNavItems = [
     to: "/seller/orders",
     icon: ShoppingBagRounded,
   },
+  /*
+   * Wallet rather than Chat: getting paid is the action sellers come
+   * back for, and BottomNavigation only fits five. Chat is still one
+   * tap away in the drawer.
+   */
   {
-    label: "Chat",
-    to: "/seller/chat",
-    icon: ChatRounded,
+    label: "Wallet",
+    to: "/seller/wallet",
+    icon: AccountBalanceWalletRounded,
   },
 ];
 

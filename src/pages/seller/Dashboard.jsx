@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -18,124 +19,90 @@ import {
   Inventory2Rounded,
   ShoppingBagRounded,
   PaymentsRounded,
-  ChatBubbleRounded,
+  AccountBalanceWalletRounded,
   TrendingUpRounded,
   WarningAmberRounded,
-  VisibilityRounded,
   LocalShippingRounded,
   CheckCircleRounded,
   AccessTimeRounded,
+  RefreshRounded,
 } from "@mui/icons-material";
 
 import { Link } from "react-router-dom";
 
-const stats = [
-  {
-    label: "Active Listings",
-    value: "12",
-    change: "+3 this month",
-    icon: Inventory2Rounded,
-  },
-  {
-    label: "Total Orders",
-    value: "8",
-    change: "+2 this week",
-    icon: ShoppingBagRounded,
-  },
-  {
-    label: "Revenue",
-    value: "KES 42,000",
-    change: "+12.5%",
-    icon: PaymentsRounded,
-  },
-  {
-    label: "Messages",
-    value: "5",
-    change: "3 unread",
-    icon: ChatBubbleRounded,
-  },
-];
+import Loading from "../../components/common/Loading";
 
-const orderStats = [
-  {
-    label: "Pending",
-    value: 3,
-    icon: AccessTimeRounded,
-  },
-  {
-    label: "Processing",
-    value: 2,
-    icon: Inventory2Rounded,
-  },
-  {
-    label: "Shipped",
-    value: 2,
-    icon: LocalShippingRounded,
-  },
-  {
-    label: "Completed",
-    value: 8,
-    icon: CheckCircleRounded,
-  },
-];
+import { sellerService } from "../../services/seller.service";
+import { getErrorMessage } from "../../utils/errors";
+import { toDate } from "../../utils/formatters";
 
-const recentOrders = [
-  {
-    id: "BN1024",
-    product: "Samsung Galaxy A15",
-    customer: "Customer",
-    amount: 18000,
-    status: "Pending",
-  },
-  {
-    id: "BN1023",
-    product: "Nike Running Shoes",
-    customer: "Customer",
-    amount: 4500,
-    status: "Processing",
-  },
-  {
-    id: "BN1022",
-    product: "Wireless Headphones",
-    customer: "Customer",
-    amount: 3200,
-    status: "Shipped",
-  },
-];
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-const products = [
-  {
-    name: "Samsung Galaxy A15",
-    price: 18000,
-    views: 324,
-    stock: 5,
-  },
-  {
-    name: "Nike Running Shoes",
-    price: 4500,
-    views: 218,
-    stock: 8,
-  },
-  {
-    name: "Wireless Headphones",
-    price: 3200,
-    views: 156,
-    stock: 2,
-  },
-];
-
-const salesData = [
-  { label: "Mon", value: 4200 },
-  { label: "Tue", value: 6800 },
-  { label: "Wed", value: 5200 },
-  { label: "Thu", value: 9100 },
-  { label: "Fri", value: 7400 },
-  { label: "Sat", value: 6300 },
-  { label: "Sun", value: 3000 },
-];
+const PROFILE_FIELDS = ["name", "phone", "email", "bio", "location", "photoURL"];
 
 function formatCurrency(value) {
   return `KES ${Number(value || 0).toLocaleString()}`;
+}
+
+/*
+ * An order carries two independent states: `status` is the fulfillment
+ * lifecycle and `paymentStatus` is whether the buyer's money actually
+ * arrived. The seller cares about the combination, so flatten them into
+ * the one label shown on the row.
+ */
+function orderLabel(order) {
+  const status = String(order.status || "").toUpperCase();
+  const paid = String(order.paymentStatus || "").toUpperCase() === "SUCCESSFUL";
+
+  if (status === "COMPLETED") return "Completed";
+  if (status === "CANCELLED") return "Cancelled";
+  if (!paid) return "Awaiting payment";
+
+  const payout = String(order.payoutStatus || "").toUpperCase();
+  if (payout === "COMPLETED") return "Paid out";
+
+  return "Paid";
+}
+
+/*
+ * Sales for the last seven days, built from the orders the API actually
+ * returned. Only money the seller is entitled to counts (sellerNet, after
+ * commission) and only once the buyer has paid — an unpaid order is not a
+ * sale. There is no per-day sales endpoint, so this is derived client-side.
+ */
+function buildWeeklySales(orders) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const days = [];
+
+  for (let offset = 6; offset >= 0; offset -= 1) {
+    const day = new Date(today);
+    day.setDate(today.getDate() - offset);
+
+    days.push({
+      label: DAY_LABELS[day.getDay()],
+      time: day.getTime(),
+      value: 0,
+    });
+  }
+
+  const windowStart = days[0].time;
+
+  for (const order of orders) {
+    if (String(order.paymentStatus || "").toUpperCase() !== "SUCCESSFUL") continue;
+
+    const placed = toDate(order.createdAt);
+    if (!placed) continue;
+
+    placed.setHours(0, 0, 0, 0);
+    if (placed.getTime() < windowStart) continue;
+
+    const day = days.find((entry) => entry.time === placed.getTime());
+    if (day) day.value += Number(order.sellerNet || 0);
+  }
+
+  return days;
 }
 
 function StatCard({ label, value, change, icon: Icon }) {
@@ -175,7 +142,7 @@ function StatCard({ label, value, change, icon: Icon }) {
 
             <Typography
               variant="caption"
-              color="success.main"
+              color="text.secondary"
               sx={{ display: "block", mt: 0.75 }}
             >
               {change}
@@ -233,25 +200,29 @@ function SectionHeader({ title, action, to }) {
 
 function StatusChip({ status }) {
   const config = {
-    Pending: {
+    "Awaiting payment": {
       color: "warning",
       icon: <AccessTimeRounded sx={{ fontSize: 15 }} />,
     },
-    Processing: {
+    Paid: {
       color: "info",
-      icon: <Inventory2Rounded sx={{ fontSize: 15 }} />,
+      icon: <PaymentsRounded sx={{ fontSize: 15 }} />,
     },
-    Shipped: {
-      color: "primary",
-      icon: <LocalShippingRounded sx={{ fontSize: 15 }} />,
+    "Paid out": {
+      color: "success",
+      icon: <AccountBalanceWalletRounded sx={{ fontSize: 15 }} />,
     },
     Completed: {
       color: "success",
       icon: <CheckCircleRounded sx={{ fontSize: 15 }} />,
     },
+    Cancelled: {
+      color: "default",
+      icon: <WarningAmberRounded sx={{ fontSize: 15 }} />,
+    },
   };
 
-  const item = config[status] || config.Pending;
+  const item = config[status] || config["Awaiting payment"];
 
   return (
     <Chip
@@ -265,13 +236,180 @@ function StatusChip({ status }) {
 }
 
 export default function Dashboard() {
+  const [dashboard, setDashboard] = useState(null);
+  const [wallet, setWallet] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      /*
+       * The wallet is a separate call and a separate concern — if it
+       * fails the rest of the dashboard is still worth showing, so it
+       * is settled independently rather than failing the whole page.
+       */
+      const [dashboardResult, walletResult] = await Promise.allSettled([
+        sellerService.dashboard(),
+        sellerService.wallet(),
+      ]);
+
+      if (dashboardResult.status === "rejected") {
+        throw dashboardResult.reason;
+      }
+
+      setDashboard(dashboardResult.value || null);
+
+      setWallet(
+        walletResult.status === "fulfilled"
+          ? walletResult.value?.wallet || null
+          : null
+      );
+    } catch (err) {
+      console.error("Failed to load seller dashboard:", err);
+      setError(getErrorMessage(err, "Could not load your dashboard."));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const statistics = dashboard?.statistics || {};
+  const shop = dashboard?.shop || null;
+
+  const recentOrders = useMemo(
+    () => (Array.isArray(dashboard?.recentOrders) ? dashboard.recentOrders : []),
+    [dashboard]
+  );
+
+  const recentProducts = useMemo(
+    () =>
+      Array.isArray(dashboard?.recentProducts)
+        ? dashboard.recentProducts.slice(0, 6)
+        : [],
+    [dashboard]
+  );
+
+  const salesData = useMemo(
+    () => buildWeeklySales(recentOrders),
+    [recentOrders]
+  );
+
+  const weekTotal = useMemo(
+    () => salesData.reduce((total, day) => total + day.value, 0),
+    [salesData]
+  );
+
   const maxSale = useMemo(
     () => Math.max(...salesData.map((item) => item.value), 1),
-    []
+    [salesData]
   );
+
+  /*
+   * Completion is measured against the shop fields a buyer actually
+   * sees on a listing, so the number means something rather than
+   * being decorative.
+   */
+  const profileCompletion = useMemo(() => {
+    if (!shop) return 0;
+
+    const filled = PROFILE_FIELDS.filter(
+      (field) => String(shop[field] || "").trim().length > 0
+    ).length;
+
+    return Math.round((filled / PROFILE_FIELDS.length) * 100);
+  }, [shop]);
+
+  const stats = [
+    {
+      label: "Active Listings",
+      value: String(statistics.activeProducts ?? 0),
+      change: `${statistics.totalProducts ?? 0} total · ${
+        statistics.totalStock ?? 0
+      } in stock`,
+      icon: Inventory2Rounded,
+    },
+    {
+      label: "Total Orders",
+      value: String(statistics.totalOrders ?? 0),
+      change: `${statistics.paidOrders ?? 0} paid · ${
+        statistics.completedOrders ?? 0
+      } completed`,
+      icon: ShoppingBagRounded,
+    },
+    {
+      label: "Earnings",
+      value: formatCurrency(statistics.sellerNet),
+      change: `${formatCurrency(statistics.grossSales)} gross · ${formatCurrency(
+        statistics.commission
+      )} commission`,
+      icon: PaymentsRounded,
+    },
+    {
+      label: "Wallet Balance",
+      value: formatCurrency(wallet?.availableBalance),
+      change: wallet
+        ? `${formatCurrency(wallet.pendingBalance)} held in escrow`
+        : "Wallet unavailable",
+      icon: AccountBalanceWalletRounded,
+    },
+  ];
+
+  const orderStats = [
+    {
+      label: "Awaiting payment",
+      value: statistics.pendingOrders ?? 0,
+      icon: AccessTimeRounded,
+    },
+    {
+      label: "Paid",
+      value: statistics.paidOrders ?? 0,
+      icon: PaymentsRounded,
+    },
+    {
+      label: "Completed",
+      value: statistics.completedOrders ?? 0,
+      icon: CheckCircleRounded,
+    },
+    {
+      label: "To deliver to store",
+      value: Math.max(
+        (statistics.paidOrders ?? 0) - (statistics.completedOrders ?? 0),
+        0
+      ),
+      icon: LocalShippingRounded,
+    },
+  ];
+
+  if (loading) {
+    return <Loading label="Loading your dashboard" />;
+  }
 
   return (
     <Stack spacing={3}>
+      {error && (
+        <Alert
+          severity="error"
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              startIcon={<RefreshRounded />}
+              onClick={load}
+            >
+              Retry
+            </Button>
+          }
+        >
+          {error}
+        </Alert>
+      )}
+
       {/* Welcome */}
       <Box
         sx={{
@@ -295,7 +433,7 @@ export default function Dashboard() {
               fontWeight={900}
               sx={{ fontSize: { xs: "1.7rem", md: "2.1rem" } }}
             >
-              Seller Dashboard
+              {shop?.name || "Seller Dashboard"}
             </Typography>
 
             <Typography
@@ -369,17 +507,17 @@ export default function Dashboard() {
             <Grid item xs={6} sm={3}>
               <Button
                 component={Link}
-                to="/seller/products"
+                to="/seller/wallet"
                 fullWidth
                 variant="outlined"
-                startIcon={<Inventory2Rounded />}
+                startIcon={<AccountBalanceWalletRounded />}
                 sx={{
                   py: 1.4,
                   fontWeight: 800,
                   borderRadius: 2,
                 }}
               >
-                Products
+                Withdraw
               </Button>
             </Grid>
 
@@ -496,7 +634,7 @@ export default function Dashboard() {
                 fontWeight={900}
                 sx={{ mb: 2 }}
               >
-                KES 42,000
+                {formatCurrency(weekTotal)}
               </Typography>
 
               <Box
@@ -510,7 +648,7 @@ export default function Dashboard() {
               >
                 {salesData.map((item) => (
                   <Stack
-                    key={item.label}
+                    key={item.time}
                     spacing={0.75}
                     alignItems="center"
                     sx={{ flex: 1, height: "100%", justifyContent: "flex-end" }}
@@ -524,7 +662,8 @@ export default function Dashboard() {
                           8
                         )}px`,
                         borderRadius: "6px 6px 2px 2px",
-                        bgcolor: "primary.main",
+                        bgcolor:
+                          item.value > 0 ? "primary.main" : "action.selected",
                         transition: "height 0.3s ease",
                       }}
                     />
@@ -559,41 +698,66 @@ export default function Dashboard() {
             to="/seller/orders"
           />
 
-          <Stack divider={<Divider />} spacing={0}>
-            {recentOrders.map((order) => (
-              <Stack
-                key={order.id}
-                direction={{ xs: "column", sm: "row" }}
-                spacing={1.5}
-                alignItems={{ xs: "flex-start", sm: "center" }}
-                justifyContent="space-between"
-                sx={{ py: 2 }}
-              >
-                <Box>
-                  <Typography fontWeight={800}>
-                    #{order.id}
-                  </Typography>
+          {recentOrders.length === 0 ? (
+            <Typography color="text.secondary" sx={{ py: 2 }}>
+              No orders yet. They will show up here as soon as a buyer
+              checks out one of your products.
+            </Typography>
+          ) : (
+            <Stack divider={<Divider />} spacing={0}>
+              {recentOrders.map((order) => {
+                const itemCount = Array.isArray(order.items)
+                  ? order.items.length
+                  : 0;
 
-                  <Typography variant="body2" color="text.secondary">
-                    {order.product}
-                  </Typography>
-                </Box>
+                const summary = Array.isArray(order.items)
+                  ? order.items
+                      .map((item) => item.title || item.name)
+                      .filter(Boolean)
+                      .join(", ")
+                  : "";
 
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  spacing={1.5}
-                  flexWrap="wrap"
-                >
-                  <Typography fontWeight={800}>
-                    {formatCurrency(order.amount)}
-                  </Typography>
+                return (
+                  <Stack
+                    key={order.id}
+                    direction={{ xs: "column", sm: "row" }}
+                    spacing={1.5}
+                    alignItems={{ xs: "flex-start", sm: "center" }}
+                    justifyContent="space-between"
+                    sx={{ py: 2 }}
+                  >
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography fontWeight={800}>
+                        #{order.orderId || order.id}
+                      </Typography>
 
-                  <StatusChip status={order.status} />
-                </Stack>
-              </Stack>
-            ))}
-          </Stack>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        noWrap
+                      >
+                        {summary ||
+                          `${itemCount} item${itemCount === 1 ? "" : "s"}`}
+                      </Typography>
+                    </Box>
+
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      spacing={1.5}
+                      flexWrap="wrap"
+                    >
+                      <Typography fontWeight={800}>
+                        {formatCurrency(order.sellerNet)}
+                      </Typography>
+
+                      <StatusChip status={orderLabel(order)} />
+                    </Stack>
+                  </Stack>
+                );
+              })}
+            </Stack>
+          )}
         </CardContent>
       </Card>
 
@@ -613,62 +777,70 @@ export default function Dashboard() {
             to="/seller/products"
           />
 
-          <Grid container spacing={2}>
-            {products.map((product) => (
-              <Grid item xs={12} sm={4} key={product.name}>
-                <Box
-                  sx={{
-                    p: 2,
-                    borderRadius: 2,
-                    bgcolor: "action.hover",
-                    height: "100%",
-                  }}
-                >
-                  <Typography fontWeight={800} noWrap>
-                    {product.name}
-                  </Typography>
+          {recentProducts.length === 0 ? (
+            <Typography color="text.secondary" sx={{ py: 2 }}>
+              You have not listed any products yet.
+            </Typography>
+          ) : (
+            <Grid container spacing={2}>
+              {recentProducts.map((product) => {
+                const stock = Number(product.stock || 0);
 
-                  <Typography
-                    color="primary"
-                    fontWeight={800}
-                    sx={{ mt: 0.5 }}
-                  >
-                    {formatCurrency(product.price)}
-                  </Typography>
-
-                  <Stack
-                    direction="row"
-                    spacing={2}
-                    sx={{ mt: 1.5 }}
-                  >
-                    <Stack direction="row" spacing={0.5} alignItems="center">
-                      <VisibilityRounded
-                        sx={{ fontSize: 16 }}
-                        color="action"
-                      />
-                      <Typography variant="caption">
-                        {product.views} views
+                return (
+                  <Grid item xs={12} sm={4} key={product.id}>
+                    <Box
+                      sx={{
+                        p: 2,
+                        borderRadius: 2,
+                        bgcolor: "action.hover",
+                        height: "100%",
+                      }}
+                    >
+                      <Typography fontWeight={800} noWrap>
+                        {product.title || product.name || "Untitled product"}
                       </Typography>
-                    </Stack>
 
-                    <Typography variant="caption" color="text.secondary">
-                      {product.stock} in stock
-                    </Typography>
-                  </Stack>
+                      <Typography
+                        color="primary"
+                        fontWeight={800}
+                        sx={{ mt: 0.5 }}
+                      >
+                        {formatCurrency(product.price)}
+                      </Typography>
 
-                  {product.stock <= 2 && (
-                    <Chip
-                      icon={<WarningAmberRounded />}
-                      label="Low stock"
-                      size="small"
-                      color="warning"
-                      sx={{ mt: 1.5 }}
-                    />
-                  )}
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
+                      <Stack
+                        direction="row"
+                        spacing={2}
+                        sx={{ mt: 1.5 }}
+                        alignItems="center"
+                      >
+                        <Typography variant="caption" color="text.secondary">
+                          {stock} in stock
+                        </Typography>
+
+                        <Chip
+                          size="small"
+                          variant="outlined"
+                          color={product.isActive ? "success" : "default"}
+                          label={product.isActive ? "Active" : "Inactive"}
+                        />
+                      </Stack>
+
+                      {stock <= 2 && (
+                        <Chip
+                          icon={<WarningAmberRounded />}
+                          label={stock === 0 ? "Out of stock" : "Low stock"}
+                          size="small"
+                          color="warning"
+                          sx={{ mt: 1.5 }}
+                        />
+                      )}
+                    </Box>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          )}
         </CardContent>
       </Card>
 
@@ -698,7 +870,7 @@ export default function Dashboard() {
 
               <LinearProgress
                 variant="determinate"
-                value={60}
+                value={profileCompletion}
                 sx={{
                   mt: 2,
                   maxWidth: 360,
@@ -712,7 +884,7 @@ export default function Dashboard() {
                 color="text.secondary"
                 sx={{ display: "block", mt: 0.75 }}
               >
-                Shop profile completion: 60%
+                Shop profile completion: {profileCompletion}%
               </Typography>
             </Box>
 

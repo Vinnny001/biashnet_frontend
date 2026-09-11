@@ -17,8 +17,8 @@ export function formatCurrency(value, currency = "KES") {
  * returning "Invalid Date", and an uncaught throw here blanks the
  * entire page since nothing render-time catches it.
  */
-export function formatDate(value) {
-  if (!value) return "Not available";
+export function toDate(value) {
+  if (!value) return null;
 
   let date;
 
@@ -32,7 +32,13 @@ export function formatDate(value) {
     date = new Date(value);
   }
 
-  if (Number.isNaN(date.getTime())) return "Not available";
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function formatDate(value) {
+  const date = toDate(value);
+
+  if (!date) return "Not available";
 
   try {
     return new Intl.DateTimeFormat("en-KE", {
