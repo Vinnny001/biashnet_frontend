@@ -7,6 +7,7 @@ import SellerLayout from "../layout/SellerLayout";
 import EmployeeLayout from "../layout/EmployeeLayout";
 import InvestorLayout from "../layout/InvestorLayout";
 import Loading from "../components/common/Loading";
+import ErrorBoundary from "../components/common/ErrorBoundary";
 import RoleRoute from "./RoleRoute";
 import EmployeeRoute from "./EmployeeRoute";
 
@@ -74,10 +75,18 @@ const EmployeeReports = lazy(() => import("../pages/employee/Reports"));
 const InvestorDashboard = lazy(() => import("../pages/investor/Dashboard"));
 
 const pageFallback = <Loading label="Loading page..." />;
+
+/*
+ * Every routed page goes through here, so it's the one place worth
+ * putting an error boundary: a render throw in one page now shows an
+ * error in the content area instead of blanking the whole app.
+ */
 const withSuspense = (Component) => (
-  <Suspense fallback={pageFallback}>
-    <Component />
-  </Suspense>
+  <ErrorBoundary>
+    <Suspense fallback={pageFallback}>
+      <Component />
+    </Suspense>
+  </ErrorBoundary>
 );
 
 export default function AppRoutes() {

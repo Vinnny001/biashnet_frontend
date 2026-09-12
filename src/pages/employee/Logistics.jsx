@@ -26,6 +26,35 @@ import {
 import { logisticsService } from "../../services/logistics.service";
 import { getErrorMessage } from "../../utils/errors";
 
+/*
+ * deliveryAddress is an object on the order — checkout writes
+ * { location, phone, notes } and older records also carry name/landmark.
+ * A few legacy orders have no address at all, and at least one shape in
+ * the wild is a plain string, so every case is normalised here: rendering
+ * the raw value would throw "Objects are not valid as a React child" and
+ * blank the page.
+ */
+function formatAddress(value) {
+
+  if (!value) return { line: "—", notes: null, phone: null };
+
+  if (typeof value === "string") {
+    return { line: value, notes: null, phone: null };
+  }
+
+  const line =
+    [value.name, value.location, value.landmark]
+      .map((part) => (part == null ? "" : String(part).trim()))
+      .filter(Boolean)
+      .join(", ") || "—";
+
+  return {
+    line,
+    notes: value.notes ? String(value.notes) : null,
+    phone: value.phone ? String(value.phone) : null,
+  };
+}
+
 function formatDeadline(value) {
 
   if (!value) return "—";
@@ -334,6 +363,8 @@ export default function Logistics() {
 
                 const dispatched = order.status === "OUT_FOR_DELIVERY";
 
+                const address = formatAddress(order.deliveryAddress);
+
                 return (
                   <TableRow key={order.orderId}>
                     <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>
@@ -347,11 +378,26 @@ export default function Logistics() {
                     <TableCell>{order.sellerCount}</TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        {order.deliveryAddress || "—"}
+                        {address.line}
                       </Typography>
-                      {order.buyerPhone && (
-                        <Typography variant="caption" color="text.secondary">
-                          {order.buyerPhone}
+
+                      {(address.phone || order.buyerPhone) && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          {address.phone || order.buyerPhone}
+                        </Typography>
+                      )}
+
+                      {address.notes && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          Note: {address.notes}
                         </Typography>
                       )}
                     </TableCell>
