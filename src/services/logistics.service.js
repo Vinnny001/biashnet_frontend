@@ -11,6 +11,17 @@ export const logisticsService = {
     return api.post(`/logistics/sub-orders/${subOrderId}/confirm-dropoff`);
   },
 
+  /*
+   * Orders where every seller has dropped off, waiting to be sent out.
+   */
+  listReadyForDelivery() {
+    return api.get("/logistics/ready-for-delivery");
+  },
+
+  markOutForDelivery(orderId) {
+    return api.post(`/logistics/orders/${orderId}/out-for-delivery`);
+  },
+
   getSubOrder(subOrderId) {
     return api.get(`/logistics/sub-orders/${subOrderId}`);
   },

@@ -17,7 +17,11 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { CheckCircleRounded, LocalShippingRounded } from "@mui/icons-material";
+import {
+  CheckCircleRounded,
+  Inventory2Rounded,
+  LocalShippingRounded,
+} from "@mui/icons-material";
 
 import { logisticsService } from "../../services/logistics.service";
 import { getErrorMessage } from "../../utils/errors";
@@ -43,8 +47,10 @@ function formatDeadline(value) {
 export default function Logistics() {
 
   const [subOrders, setSubOrders] = useState([]);
+  const [readyOrders, setReadyOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busySubOrderId, setBusySubOrderId] = useState(null);
+  const [busyOrderId, setBusyOrderId] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -58,9 +64,28 @@ export default function Logistics() {
 
       setLoading(true);
 
-      const payload = await logisticsService.listPendingDropoffs();
+      /*
+       * The two queues are independent: a drop-off failing to load
+       * shouldn't hide orders that are already waiting to go out.
+       */
+      const [pending, ready] = await Promise.allSettled([
+        logisticsService.listPendingDropoffs(),
+        logisticsService.listReadyForDelivery(),
+      ]);
 
-      setSubOrders(payload?.subOrders || []);
+      if (pending.status === "fulfilled") {
+        setSubOrders(pending.value?.subOrders || []);
+      }
+
+      if (ready.status === "fulfilled") {
+        setReadyOrders(ready.value?.orders || []);
+      }
+
+      const failed = [pending, ready].find((r) => r.status === "rejected");
+
+      if (failed) {
+        setError(getErrorMessage(failed.reason));
+      }
 
     } catch (err) {
 
@@ -100,6 +125,34 @@ export default function Logistics() {
     } finally {
 
       setBusySubOrderId(null);
+    }
+  }
+
+  async function handleDispatch(orderId) {
+
+    try {
+
+      setBusyOrderId(orderId);
+
+      setError("");
+
+      setMessage("");
+
+      await logisticsService.markOutForDelivery(orderId);
+
+      setMessage(
+        `${orderId} is out for delivery. The buyer has been notified to have their completion code ready.`
+      );
+
+      loadPending();
+
+    } catch (err) {
+
+      setError(getErrorMessage(err));
+
+    } finally {
+
+      setBusyOrderId(null);
     }
   }
 
@@ -146,7 +199,9 @@ export default function Logistics() {
           Logistics
         </Typography>
         <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-          Confirm seller drop-offs at Biashnet, and verify the buyer's code on final delivery.
+          Step 1 — confirm each seller's drop-off. Step 2 — send the order out once
+          they're all in. Step 3 — verify the buyer's code on handover, which releases
+          the sellers' funds.
         </Typography>
       </Box>
 
@@ -163,46 +218,13 @@ export default function Logistics() {
 
       <Card sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider", boxShadow: "none" }}>
         <CardContent>
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-            <CheckCircleRounded color="primary" />
-            <Typography fontWeight={800}>Confirm final delivery to buyer</Typography>
-          </Stack>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Once every seller on an order has dropped off (no sub-order still Pending Drop-off
-            below), the buyer gives you their completion code on final delivery.
-          </Typography>
-          <Box component="form" onSubmit={handleVerifyFinalDelivery}>
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "flex-end" }}>
-              <TextField
-                label="Order ID"
-                required
-                value={finalOrderId}
-                onChange={(e) => setFinalOrderId(e.target.value)}
-                sx={{ minWidth: 260 }}
-              />
-              <TextField
-                label="Buyer's completion code"
-                required
-                inputProps={{ maxLength: 6, inputMode: "numeric" }}
-                value={finalCode}
-                onChange={(e) => setFinalCode(e.target.value)}
-              />
-              <Button type="submit" variant="contained" disabled={verifying}>
-                {verifying ? "Verifying..." : "Verify & Complete"}
-              </Button>
-            </Stack>
-          </Box>
-        </CardContent>
-      </Card>
-
-      <Divider />
-
-      <Card sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider", boxShadow: "none" }}>
-        <CardContent>
           <Stack direction="row" spacing={1} alignItems="center">
-            <LocalShippingRounded color="primary" />
-            <Typography fontWeight={800}>Pending seller drop-offs</Typography>
+            <Inventory2Rounded color="primary" />
+            <Typography fontWeight={800}>1 · Pending seller drop-offs</Typography>
           </Stack>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Sellers bringing item(s) to Biashnet. Confirm each one as it arrives.
+          </Typography>
         </CardContent>
         <TableContainer>
           <Table>
@@ -265,6 +287,131 @@ export default function Logistics() {
             </TableBody>
           </Table>
         </TableContainer>
+      </Card>
+
+      <Card sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider", boxShadow: "none" }}>
+        <CardContent>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <LocalShippingRounded color="primary" />
+            <Typography fontWeight={800}>2 · Ready to send out</Typography>
+          </Stack>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Every seller on these orders has dropped off. Sending one out marks it
+            Out for delivery on the buyer's tracker and tells them to have their
+            completion code ready. No money moves yet.
+          </Typography>
+        </CardContent>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Order</TableCell>
+                <TableCell>Items</TableCell>
+                <TableCell>Sellers</TableCell>
+                <TableCell>Deliver to</TableCell>
+                <TableCell align="right">Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {!loading && readyOrders.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5}>
+                    <Typography color="text.secondary">
+                      Nothing waiting to go out.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+              {readyOrders.map((order) => {
+                const itemCount = Array.isArray(order.items) ? order.items.length : 0;
+
+                const titles = Array.isArray(order.items)
+                  ? order.items
+                      .map((item) => item.title || item.name)
+                      .filter(Boolean)
+                      .join(", ")
+                  : "";
+
+                const dispatched = order.status === "OUT_FOR_DELIVERY";
+
+                return (
+                  <TableRow key={order.orderId}>
+                    <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>
+                      {order.orderId}
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {titles || `${itemCount} item${itemCount === 1 ? "" : "s"}`}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>{order.sellerCount}</TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {order.deliveryAddress || "—"}
+                      </Typography>
+                      {order.buyerPhone && (
+                        <Typography variant="caption" color="text.secondary">
+                          {order.buyerPhone}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell align="right">
+                      {dispatched ? (
+                        <Chip size="small" color="info" label="Out for delivery" />
+                      ) : (
+                        <Button
+                          size="small"
+                          variant="contained"
+                          disabled={busyOrderId === order.orderId}
+                          onClick={() => handleDispatch(order.orderId)}
+                        >
+                          Send out for delivery
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Card>
+
+      <Divider />
+
+      <Card sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider", boxShadow: "none" }}>
+        <CardContent>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+            <CheckCircleRounded color="primary" />
+            <Typography fontWeight={800}>3 · Confirm final delivery to buyer</Typography>
+          </Stack>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            On handover the buyer gives you their completion code. Verifying it
+            completes the order and releases each seller's funds — so only enter a
+            code the buyer has actually given you in person.
+          </Typography>
+          <Box component="form" onSubmit={handleVerifyFinalDelivery}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "flex-end" }}>
+              <TextField
+                label="Order ID"
+                required
+                value={finalOrderId}
+                onChange={(e) => setFinalOrderId(e.target.value)}
+                sx={{ minWidth: 260 }}
+              />
+              <TextField
+                label="Buyer's completion code"
+                required
+                inputProps={{ maxLength: 6, inputMode: "numeric" }}
+                value={finalCode}
+                onChange={(e) => setFinalCode(e.target.value)}
+              />
+              <Button type="submit" variant="contained" disabled={verifying}>
+                {verifying ? "Verifying..." : "Verify & Complete"}
+              </Button>
+            </Stack>
+          </Box>
+        </CardContent>
       </Card>
     </Stack>
   );

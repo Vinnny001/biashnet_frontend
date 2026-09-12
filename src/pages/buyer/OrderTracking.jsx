@@ -6,7 +6,22 @@ import Loading from "../../components/common/Loading";
 import { orderService } from "../../services/order.service";
 import { getErrorMessage } from "../../utils/errors";
 
-const SELF_CANCELLABLE_STATUSES = ["PENDING_PAYMENT", "PAYMENT_INITIATED", "PAID"];
+/*
+ * Everything before handover. A paid order now advances through
+ * PROCESSING -> READY_FOR_DELIVERY -> OUT_FOR_DELIVERY as sellers drop
+ * off and logistics sends it out; the buyer keeps the right to cancel
+ * throughout, because funds are only released against their completion
+ * code when the rider hands the order over. mpesa-api enforces the same
+ * list in orderService — this only decides whether to show the button.
+ */
+const SELF_CANCELLABLE_STATUSES = [
+  "PENDING_PAYMENT",
+  "PAYMENT_INITIATED",
+  "PAID",
+  "PROCESSING",
+  "READY_FOR_DELIVERY",
+  "OUT_FOR_DELIVERY",
+];
 
 export default function OrderTracking() {
   const { id } = useParams();
