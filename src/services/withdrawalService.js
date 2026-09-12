@@ -25,7 +25,7 @@ export async function createWithdrawal({
     phoneNumber
 }) {
 
-    return api.post(
+    return paymentApi.post(
         "/withdrawals",
         {
             amount,
@@ -43,7 +43,7 @@ GET MY WITHDRAWALS
 
 export async function getMyWithdrawals() {
 
-    return api.get(
+    return paymentApi.get(
         "/withdrawals"
     );
 }
@@ -59,7 +59,7 @@ export async function getWithdrawal(
     withdrawalId
 ) {
 
-    return api.get(
+    return paymentApi.get(
         `/withdrawals/${withdrawalId}`
     );
 }
@@ -75,7 +75,7 @@ export async function cancelWithdrawal(
     withdrawalId
 ) {
 
-    return api.post(
+    return paymentApi.post(
         `/withdrawals/${withdrawalId}/cancel`
     );
 }
