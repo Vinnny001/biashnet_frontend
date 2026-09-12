@@ -278,7 +278,7 @@ export default function SellerLayout() {
           <Stack direction="row" alignItems="center" spacing={0.5}>
             <Tooltip title="Notifications">
               <IconButton
-                onClick={() => navigate("/notifications")}
+                onClick={() => navigate("/seller/notifications")}
               >
                 <Badge badgeContent={3} color="error">
                   <NotificationsNoneRounded />

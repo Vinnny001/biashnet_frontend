@@ -148,6 +148,13 @@ export default function AppRoutes() {
           <Route path="products/:id/edit" element={withSuspense(EditProduct)} />
           <Route path="orders" element={withSuspense(SellerOrders)} />
           <Route path="wallet" element={withSuspense(SellerWallet)} />
+          {/*
+            Same feed as the buyer's — the backend scopes every row to the
+            caller's uid. It needs its own path because /notifications is
+            inside the buyer-only RoleRoute, so a seller tapping the bell
+            there would just be redirected away.
+          */}
+          <Route path="notifications" element={withSuspense(Notifications)} />
           <Route path="analytics" element={withSuspense(SellerAnalytics)} />
           <Route path="chat" element={withSuspense(SellerChat)} />
           <Route path="profile" element={withSuspense(SellerProfile)} />
