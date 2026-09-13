@@ -117,23 +117,16 @@ export default function SellerOrders() {
         order.id || order._id || ""
       ).toLowerCase();
 
-      const customer = String(
-        order.customerName ||
-          order.buyerName ||
-          order.customer?.name ||
-          "Customer"
-      ).toLowerCase();
-
       const status = String(
         order.orderStatus ||
           order.status ||
           "pending"
       ).toLowerCase();
 
+      // Sellers never see buyer details, so orders are searched by ID only.
       const matchesSearch =
         !query ||
-        id.includes(query) ||
-        customer.includes(query);
+        id.includes(query);
 
       const matchesStatus =
         statusFilter === "all" ||
@@ -411,7 +404,7 @@ export default function SellerOrders() {
             <TextField
               fullWidth
               size="small"
-              placeholder="Search by order ID or customer..."
+              placeholder="Search by order ID..."
               value={search}
               onChange={(event) =>
                 setSearch(event.target.value)

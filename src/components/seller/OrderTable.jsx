@@ -51,13 +51,14 @@ function getOrderStatus(order) {
   );
 }
 
-function getBuyerName(order) {
-  return (
-    order.customerName ||
-    order.buyerName ||
-    order.customer?.name ||
-    "Customer"
-  );
+/*
+ * Sellers are never shown who the buyer is — Biashnet handles delivery,
+ * and the orders API no longer sends buyer details. Deliberately a fixed
+ * label, not a lookup, so a name can't reappear here if one is ever added
+ * back to an order payload.
+ */
+function getBuyerName() {
+  return "Customer";
 }
 
 function getOrderId(order) {
