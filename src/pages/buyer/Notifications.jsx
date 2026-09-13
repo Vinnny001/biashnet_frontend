@@ -18,6 +18,7 @@ import {
   CheckCircleRounded,
   DoneAllRounded,
   ErrorOutlineRounded,
+  FactCheckRounded,
   LocalShippingRounded,
   NotificationsNoneRounded,
   PaymentsRounded,
@@ -54,6 +55,7 @@ const TYPE_STYLES = {
   ORDER_CANCELLED_REFUNDED: { icon: ErrorOutlineRounded, color: "error" },
   DROPOFF_NON_COMPLIANT: { icon: AccessTimeRounded, color: "error" },
   FUNDS_RELEASED: { icon: PaymentsRounded, color: "success" },
+  PRODUCT_PENDING_REVIEW: { icon: FactCheckRounded, color: "warning" },
   PARTIAL_FULFILLMENT_CHOICE: { icon: ReceiptLongRounded, color: "warning" },
 };
 
@@ -67,14 +69,22 @@ function orderIdOf(notification) {
 }
 
 /*
- * Where "View order" goes for each account. Only buyers have a per-order
- * page; a seller's orders live on their orders list. Other accounts'
- * notifications aren't about marketplace orders.
+ * The action button for a notification, if there's somewhere useful to go.
+ * A listing awaiting review opens the admin products page. For orders,
+ * only buyers have a per-order page; a seller's orders live on their
+ * orders list.
  */
-function orderLinkFor(audience, orderId) {
+function actionFor(notification, audience) {
+  if (notification.type === "PRODUCT_PENDING_REVIEW") {
+    return { to: "/admin/products", label: "Review listing" };
+  }
+
+  const orderId = orderIdOf(notification);
   if (!orderId) return null;
-  if (audience === "BUYER") return `/orders/${orderId}`;
-  if (audience === "SELLER") return "/seller/orders";
+
+  if (audience === "BUYER") return { to: `/orders/${orderId}`, label: "View order" };
+  if (audience === "SELLER") return { to: "/seller/orders", label: "View order" };
+
   return null;
 }
 
@@ -249,9 +259,9 @@ export default function Notifications({ audience = "BUYER" }) {
 
                 const Icon = style.icon;
                 const unread = notification.read !== true;
-                const orderLink = orderLinkFor(
-                  notification.audience || audience,
-                  orderIdOf(notification)
+                const action = actionFor(
+                  notification,
+                  notification.audience || audience
                 );
 
                 return (
@@ -327,15 +337,15 @@ export default function Notifications({ audience = "BUYER" }) {
                           {formatDate(notification.createdAt)}
                         </Typography>
 
-                        {orderLink && (
+                        {action && (
                           <Button
                             component={Link}
-                            to={orderLink}
+                            to={action.to}
                             size="small"
                             sx={{ fontWeight: 700 }}
                             onClick={(event) => event.stopPropagation()}
                           >
-                            View order
+                            {action.label}
                           </Button>
                         )}
                       </Stack>

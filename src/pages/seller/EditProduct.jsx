@@ -101,13 +101,21 @@ export default function EditProduct() {
        *
        * to reach the backend in one request.
        */
-      await productService.update(
+      const result = await productService.update(
         id,
         formData
       );
 
+      /*
+       * Changing a reviewed listing's title, description, category,
+       * condition or photos sends it back for admin review, which hides it
+       * from buyers until it's approved. Say so, or the seller will think
+       * their listing has simply vanished.
+       */
       setMessage(
-        "Product updated successfully."
+        result?.data?.sentForReview
+          ? "Changes saved. Because you changed how this listing looks, it's been sent for review and is hidden from buyers until an admin approves it."
+          : "Product updated successfully."
       );
 
       /*
