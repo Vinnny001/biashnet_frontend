@@ -57,10 +57,11 @@ export const productService = {
   |--------------------------------------------------------------------------
   | MODERATE (approve / reject) — main API, admin-only
   |--------------------------------------------------------------------------
+  | The note goes to the seller: required to reject, optional to approve.
   */
 
-  updateStatus(id, status) {
-    return api.patch(`/products/${id}/status`, { status });
+  updateStatus(id, status, note = "") {
+    return api.patch(`/products/${id}/status`, { status, note });
   },
 
   /*

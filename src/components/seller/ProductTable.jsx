@@ -179,6 +179,7 @@ export default function ProductTable({
 
                     <TableCell>
                       <StatusChip status={status} />
+                      <RejectionReason product={product} />
                     </TableCell>
 
                     <TableCell align="right">
@@ -314,6 +315,8 @@ export default function ProductTable({
                         product.price
                       )}
                     </Typography>
+
+                    <RejectionReason product={product} />
                   </Box>
                 </Stack>
 
@@ -442,6 +445,33 @@ function StatusChip({ status }) {
         textTransform: "capitalize",
       }}
     />
+  );
+}
+
+/*
+ * Why an admin rejected the listing, so the seller knows what to fix
+ * without opening their notifications.
+ */
+function RejectionReason({ product }) {
+  if (
+    String(product.status).toLowerCase() !== "rejected" ||
+    !product.reviewNote
+  ) {
+    return null;
+  }
+
+  return (
+    <Typography
+      variant="caption"
+      color="error.main"
+      sx={{
+        display: "block",
+        mt: 0.75,
+        maxWidth: 260,
+      }}
+    >
+      Reason: {product.reviewNote}
+    </Typography>
   );
 }
 

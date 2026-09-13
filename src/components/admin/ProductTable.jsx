@@ -53,6 +53,11 @@ export default function ProductTable({ products = [], busyId = null, onModerate 
                 <TableCell>{formatCurrency(product.price)}</TableCell>
                 <TableCell>
                   <Chip size="small" label={status} color={STATUS_COLORS[status] || "default"} />
+                  {product.reviewNote && status !== "pending" && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5, maxWidth: 280 }}>
+                      Note: {product.reviewNote}
+                    </Typography>
+                  )}
                 </TableCell>
                 {onModerate && (
                   <TableCell>

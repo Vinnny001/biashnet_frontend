@@ -56,6 +56,8 @@ const TYPE_STYLES = {
   DROPOFF_NON_COMPLIANT: { icon: AccessTimeRounded, color: "error" },
   FUNDS_RELEASED: { icon: PaymentsRounded, color: "success" },
   PRODUCT_PENDING_REVIEW: { icon: FactCheckRounded, color: "warning" },
+  PRODUCT_APPROVED: { icon: CheckCircleRounded, color: "success" },
+  PRODUCT_REJECTED: { icon: ErrorOutlineRounded, color: "error" },
   PARTIAL_FULFILLMENT_CHOICE: { icon: ReceiptLongRounded, color: "warning" },
 };
 
@@ -70,13 +72,24 @@ function orderIdOf(notification) {
 
 /*
  * The action button for a notification, if there's somewhere useful to go.
- * A listing awaiting review opens the admin products page. For orders,
- * only buyers have a per-order page; a seller's orders live on their
- * orders list.
+ * A listing awaiting review opens the admin products page; a seller's
+ * rejected listing opens its editor so they can fix it, and an approved
+ * one opens the live listing. For orders, only buyers have a per-order
+ * page; a seller's orders live on their orders list.
  */
 function actionFor(notification, audience) {
   if (notification.type === "PRODUCT_PENDING_REVIEW") {
     return { to: "/admin/products", label: "Review listing" };
+  }
+
+  const productId = notification.productId || notification.data?.productId;
+
+  if (notification.type === "PRODUCT_REJECTED" && productId) {
+    return { to: `/seller/products/${productId}/edit`, label: "Fix listing" };
+  }
+
+  if (notification.type === "PRODUCT_APPROVED" && productId) {
+    return { to: `/products/${productId}`, label: "View listing" };
   }
 
   const orderId = orderIdOf(notification);

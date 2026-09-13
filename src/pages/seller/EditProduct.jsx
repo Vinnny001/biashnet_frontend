@@ -324,6 +324,23 @@ export default function EditProduct() {
       )}
 
       {/* =================================
+          REJECTED — the admin's reason
+      ================================== */}
+
+      {product.status === "rejected" && (
+        <Alert
+          severity="error"
+          sx={{ borderRadius: 2 }}
+        >
+          <strong>This listing wasn't approved.</strong>{" "}
+          {product.reviewNote
+            ? `Reason: ${product.reviewNote} `
+            : ""}
+          Fix the photos or text below and save to send it for review again.
+        </Alert>
+      )}
+
+      {/* =================================
           ERROR
       ================================== */}
 

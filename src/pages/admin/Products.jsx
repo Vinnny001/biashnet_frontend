@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Alert, MenuItem, Stack, TextField, Typography } from "@mui/material";
 import ProductTable from "../../components/admin/ProductTable";
+import ReviewDecisionDialog from "../../components/admin/ReviewDecisionDialog";
 import Loading from "../../components/common/Loading";
 import { productService } from "../../services/product.service";
 import { normalizeList } from "../../utils/helpers";
@@ -21,6 +22,9 @@ export default function Products() {
   const [busyId, setBusyId] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  // The approve / reject decision being confirmed: { product, status }.
+  const [decision, setDecision] = useState(null);
+  const [decisionError, setDecisionError] = useState("");
 
   async function loadProducts() {
     try {
@@ -41,15 +45,34 @@ export default function Products() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
-  async function handleModerate(productId, status) {
+  function openDecision(productId, status) {
+    const product = products.find((item) => (item.id || item._id) === productId);
+    setDecisionError("");
+    setDecision({ product: product || { id: productId }, status });
+  }
+
+  async function confirmDecision(note) {
+    const { product, status } = decision;
+    const productId = product.id || product._id;
+
     try {
       setBusyId(productId);
-      setError("");
-      await productService.updateStatus(productId, status);
-      setMessage(status === "approved" ? "Product approved — now live on the marketplace." : "Product rejected.");
+      setDecisionError("");
+      setMessage("");
+
+      const result = await productService.updateStatus(productId, status, note);
+
+      const outcome = status === "approved" ? "Product approved — now live on the marketplace." : "Product rejected.";
+      setMessage(
+        result?.sellerNotified === false
+          ? `${outcome} The seller couldn't be notified, so let them know directly.`
+          : `${outcome} The seller has been notified.`
+      );
+      setDecision(null);
       loadProducts();
     } catch (err) {
-      setError(getErrorMessage(err));
+      // Keep the dialog open with the note, so nothing typed is lost.
+      setDecisionError(getErrorMessage(err));
     } finally {
       setBusyId(null);
     }
@@ -89,7 +112,19 @@ export default function Products() {
       {loading ? (
         <Loading />
       ) : (
-        <ProductTable products={products} busyId={busyId} onModerate={handleModerate} />
+        <ProductTable products={products} busyId={busyId} onModerate={openDecision} />
+      )}
+
+      {decision && (
+        <ReviewDecisionDialog
+          key={`${decision.product.id || decision.product._id}-${decision.status}`}
+          product={decision.product}
+          status={decision.status}
+          busy={busyId !== null}
+          error={decisionError}
+          onCancel={() => setDecision(null)}
+          onConfirm={confirmDecision}
+        />
       )}
     </Stack>
   );
