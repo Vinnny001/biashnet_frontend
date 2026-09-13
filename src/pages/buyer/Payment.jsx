@@ -62,6 +62,9 @@ export default function Payment() {
   */
 
   const [pollStatus, setPollStatus] = useState("waiting");
+  // Bumped on every payment attempt so polling restarts even when the page
+  // is already showing a started payment (resending from the timeout screen).
+  const [pollRun, setPollRun] = useState(0);
   const pollAttempts = useRef(0);
   const pollTimer = useRef(null);
 
@@ -146,11 +149,22 @@ export default function Payment() {
     pollTimer.current = setInterval(poll, POLL_INTERVAL_MS);
 
     return stopPolling;
-  }, [paymentStarted, orderId]);
+  }, [paymentStarted, orderId, pollRun]);
 
   async function handlePay(event) {
     event.preventDefault();
+    await startPayment();
+  }
 
+  /*
+   * Also used by "Send a new M-PESA prompt" on the timeout screen, for
+   * when Safaricom accepts a request but the prompt never reaches the
+   * phone. Safe to press at any time: the server only sends a new prompt
+   * once the old one is past its cutoff and Safaricom confirms it wasn't
+   * paid — otherwise it replies with a message saying why not, which is
+   * shown instead of a false "sent".
+   */
+  async function startPayment() {
     if (submitting) return;
 
     const cleanPhone = phone.trim().replace(/\s+/g, "").replace(/-/g, "");
@@ -169,6 +183,7 @@ export default function Payment() {
       pollAttempts.current = 0;
       setPollStatus("waiting");
       setPaymentStarted(true);
+      setPollRun((run) => run + 1);
 
       /*
       Checkout already marked these cart items as checked-out
@@ -198,9 +213,15 @@ export default function Payment() {
       <Box sx={{ maxWidth: 520, mx: "auto", py: { xs: 2, md: 4 } }}>
         <Card>
           <Stack spacing={2}>
+            {error && <Alert severity="error">{error}</Alert>}
+
             {pollStatus === "waiting" && (
               <>
-                <Alert severity="success">M-PESA payment request sent successfully.</Alert>
+                <Alert severity={paymentResult?.alreadyInitiated ? "info" : "success"}>
+                  {paymentResult?.alreadyInitiated && paymentResult?.message
+                    ? paymentResult.message
+                    : "M-PESA payment request sent successfully."}
+                </Alert>
 
                 <Stack direction="row" spacing={1.5} alignItems="center">
                   <CircularProgress size={22} />
@@ -257,7 +278,7 @@ export default function Payment() {
               <Alert severity="warning">
                 Still waiting on confirmation from M-PESA. If you completed the prompt on your
                 phone, this can take a little longer to reflect — check your order history in a
-                moment.
+                moment. If no prompt ever appeared on your phone, send a new one below.
               </Alert>
             )}
 
@@ -284,6 +305,15 @@ export default function Payment() {
                 </Button>
                 <Button variant="outlined" onClick={() => navigate("/orders")}>
                   View my orders
+                </Button>
+              </Stack>
+            ) : pollStatus === "timeout" ? (
+              <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
+                <Button variant="contained" onClick={startPayment} disabled={submitting}>
+                  {submitting ? "Sending..." : "Send a new M-PESA prompt"}
+                </Button>
+                <Button variant="outlined" onClick={() => navigate("/orders")}>
+                  Track my order
                 </Button>
               </Stack>
             ) : (
