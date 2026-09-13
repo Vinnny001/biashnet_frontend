@@ -15,6 +15,7 @@ import {
 import { Link } from "react-router-dom";
 
 import ProductForm from "../../components/forms/ProductForm";
+import ListingPolicyNote from "../../components/seller/ListingPolicyNote";
 import { productService } from "../../services/product.service";
 import { getErrorMessage } from "../../utils/errors";
 
@@ -31,7 +32,7 @@ export default function AddProduct() {
       await productService.create(formData);
 
       setMessage(
-        "Your product has been published successfully and is now available to buyers."
+        "Your product has been submitted for review. Buyers will see it once an admin approves it."
       );
 
       setFormKey((key) => key + 1);
@@ -146,10 +147,14 @@ export default function AddProduct() {
             },
           }}
         >
-          <ProductForm
-            key={formKey}
-            onSubmit={handleSubmit}
-          />
+          <ListingPolicyNote />
+
+          <Box sx={{ mt: 2.5 }}>
+            <ProductForm
+              key={formKey}
+              onSubmit={handleSubmit}
+            />
+          </Box>
         </CardContent>
       </Card>
     </Stack>

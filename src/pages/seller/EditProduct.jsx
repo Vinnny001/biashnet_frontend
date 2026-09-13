@@ -25,6 +25,7 @@ import {
 
 import Loading from "../../components/common/Loading";
 import ProductForm from "../../components/forms/ProductForm";
+import ListingPolicyNote from "../../components/seller/ListingPolicyNote";
 
 import { productService } from "../../services/product.service";
 import { getErrorMessage } from "../../utils/errors";
@@ -369,11 +370,15 @@ export default function EditProduct() {
             },
           }}
         >
-          <ProductForm
-            initialValues={product}
-            onSubmit={handleSubmit}
-            submitting={saving}
-          />
+          <ListingPolicyNote editing />
+
+          <Box sx={{ mt: 2.5 }}>
+            <ProductForm
+              initialValues={product}
+              onSubmit={handleSubmit}
+              submitting={saving}
+            />
+          </Box>
         </CardContent>
       </Card>
     </Stack>

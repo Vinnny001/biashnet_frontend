@@ -85,6 +85,23 @@ export const PAYMENT_API_BASE_URL =
 
 /*
 =========================================================
+PUBLIC WEBSITE
+=========================================================
+
+Where the static public pages (policies) are hosted. The
+Android app bundles them too, but opens external pages in
+the phone's browser, which can't reach the app's bundled
+files — so links that must open outside the app use this
+absolute address.
+=========================================================
+*/
+
+export const WEB_APP_URL =
+  import.meta.env.VITE_WEB_APP_URL ||
+  "https://biashnet.vercel.app";
+
+/*
+=========================================================
 UPLOAD SERVER
 =========================================================
 */
