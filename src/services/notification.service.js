@@ -28,6 +28,8 @@ export const notificationService = {
   },
 
   markAllRead(audience) {
-    return api.post("/notifications/read-all", null, { params: { audience } });
+    // An empty object, not null: axios sends null as the JSON text "null",
+    // which the backend's JSON body parser rejects before the route runs.
+    return api.post("/notifications/read-all", {}, { params: { audience } });
   },
 };
