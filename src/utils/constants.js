@@ -100,6 +100,9 @@ export const WEB_APP_URL =
   import.meta.env.VITE_WEB_APP_URL ||
   "https://biashnet.vercel.app";
 
+export const SELLER_LISTING_POLICY_URL =
+  `${WEB_APP_URL}/seller-listing-policy.html`;
+
 /*
 =========================================================
 UPLOAD SERVER

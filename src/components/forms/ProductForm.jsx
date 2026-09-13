@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Divider,
+  Link as MuiLink,
   MenuItem,
   Paper,
   Stack,
@@ -23,6 +24,7 @@ import { useState } from "react";
 
 import Input from "../common/Input";
 import ImageUploader from "../product/ImageUploader";
+import { SELLER_LISTING_POLICY_URL } from "../../utils/constants";
 
 const categories = [
   { value: "electronics", label: "Electronics" },
@@ -428,16 +430,12 @@ export default function ProductForm({
         />
       </FormSection>
 
-      {/* Publish */}
-      <Box
-        sx={{
-          position: { xs: "sticky", md: "static" },
-          bottom: { xs: 76, md: "auto" },
-          zIndex: 5,
-          bgcolor: "background.paper",
-          pt: 1,
-        }}
-      >
+      {/*
+        Publish. Deliberately not sticky: pinned above the phone's bottom
+        navigation it sat on top of the Location field, the last field in
+        the form, and hid part of it even when scrolled to the end.
+      */}
+      <Box sx={{ pt: 1 }}>
         <Button
           type="submit"
           variant="contained"
@@ -476,8 +474,16 @@ export default function ProductForm({
               variant="caption"
               color="text.secondary"
             >
-              Your listing will be reviewed according to
-              BIASHNET marketplace rules.
+              Your listing will be reviewed against the{" "}
+              <MuiLink
+                href={SELLER_LISTING_POLICY_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                fontWeight={700}
+              >
+                seller listing policy
+              </MuiLink>
+              .
             </Typography>
           </Stack>
         )}
