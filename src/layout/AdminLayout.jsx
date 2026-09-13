@@ -6,6 +6,7 @@ import Sidebar from "./components/Sidebar";
 
 const adminLinks = [
   { label: "Dashboard", to: "/admin/dashboard" },
+  { label: "Notifications", to: "/admin/notifications" },
   { label: "Products", to: "/admin/products" },
   { label: "Orders", to: "/admin/orders" },
   { label: "Users", to: "/admin/users" },

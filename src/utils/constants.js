@@ -304,6 +304,13 @@ export const STORAGE_KEYS = {
   EMPLOYEE_ROLE:
     "biashnet.employeeRole",
 
+  /*
+   * A tapped push notification waiting to be opened — survives a cold
+   * start and a detour through the login screen. See utils/pushIntent.js.
+   */
+  PUSH_INTENT:
+    "biashnet.pushIntent",
+
 };
 
 

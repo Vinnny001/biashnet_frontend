@@ -9,7 +9,11 @@ import { authService } from "../services/auth.service";
 import { STORAGE_KEYS, USER_ROLES } from "../utils/constants";
 import { getErrorMessage } from "../utils/errors";
 import { storage } from "../utils/storage";
-import { attachPushListeners, flushPendingDeviceToken, registerPushNotifications } from "../services/push";
+import { attachPushListeners, claimDeviceForUser, registerPushNotifications, releaseDevice } from "../services/push";
+
+function userIdOf(user) {
+  return user?.uid || user?.id || null;
+}
 
 export const AuthContext = createContext(null);
 
@@ -117,6 +121,10 @@ export function AuthProvider({ children }) {
   );
 
   const logout = useCallback(async () => {
+    // Stop this device receiving the account's notifications. Has to
+    // happen while the session's auth token is still valid.
+    await releaseDevice();
+
     try {
       await authService.logout();
     } catch {
@@ -133,19 +141,25 @@ export function AuthProvider({ children }) {
     window.addEventListener("biashnet:unauthorized", onUnauthorized);
 
     // No-ops entirely on web — only does anything inside the Android app.
-    attachPushListeners({ isAuthenticated: () => Boolean(storage.get(STORAGE_KEYS.TOKEN)) });
+    attachPushListeners({
+      getUserId: () => (storage.get(STORAGE_KEYS.TOKEN) ? userIdOf(storage.get(STORAGE_KEYS.USER)) : null)
+    });
     registerPushNotifications();
 
     return () => window.removeEventListener("biashnet:unauthorized", onUnauthorized);
   }, [clearSession, refreshUser]);
 
-  // Once a session exists, sync a device token the "registration" event
-  // may have already delivered before login finished.
+  // Whoever is signed in owns this device's notifications. Keyed on the
+  // uid, not the session object, so switching between one person's own
+  // accounts (buyer <-> seller, work) doesn't re-register — but signing
+  // in as a different person moves the device to them.
+  const sessionUid = token ? userIdOf(user) : null;
+
   useEffect(() => {
-    if (user && token) {
-      flushPendingDeviceToken();
+    if (sessionUid) {
+      claimDeviceForUser(sessionUid);
     }
-  }, [user, token]);
+  }, [sessionUid]);
 
   const value = useMemo(
     () => ({

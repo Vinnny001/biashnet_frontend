@@ -33,6 +33,7 @@ import {
   LocalShippingRounded,
   LogoutRounded,
   MenuRounded,
+  NotificationsNoneRounded,
   PaidRounded,
   ReceiptLongRounded,
   SwapHorizRounded,
@@ -48,6 +49,7 @@ import { ROLE_LABELS } from "../utils/employeeRoles";
 
 const NAV_ITEMS = [
   { label: "Dashboard", to: "/employee/dashboard", icon: DashboardRounded },
+  { label: "Notifications", to: "/employee/notifications", icon: NotificationsNoneRounded },
   { label: "Employees", to: "/employee/employees", icon: GroupsRounded, roles: ["hr", "admin", "ceo"] },
   { label: "Positions", to: "/employee/positions", icon: WorkRounded, roles: ["hr", "admin"] },
   { label: "Expenses", to: "/employee/expenses", icon: ReceiptLongRounded, roles: ["accountant", "admin"] },

@@ -3,6 +3,7 @@
 import { Capacitor } from "@capacitor/core";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { api } from "./api";
+import { PUSH_INTENT_EVENT, savePushIntent } from "../utils/pushIntent";
 
 /*
 |--------------------------------------------------------------------------
@@ -83,19 +84,31 @@ export async function registerPushNotifications() {
 */
 
 let listenersAttached = false;
-let pendingToken = null;
 
-export function attachPushListeners({ isAuthenticated }) {
+/*
+ * The device's FCM token, and which user it is currently registered to.
+ * A device belongs to exactly one signed-in user: registering it for a
+ * new user moves it (the backend detaches it from anyone else), and
+ * signing out releases it — so a phone never shows another account's
+ * notifications, and shows none at all when nobody is signed in.
+ */
+let currentToken = null;
+let claimedForUid = null;
+let getSessionUid = () => null;
+
+export function attachPushListeners({ getUserId }) {
   if (!Capacitor.isNativePlatform()) return;
   if (listenersAttached) return;
   listenersAttached = true;
 
+  getSessionUid = getUserId || (() => null);
+
   PushNotifications.addListener("registration", (token) => {
-    if (isAuthenticated()) {
-      syncDeviceToken(token.value);
-    } else {
-      pendingToken = token.value;
-    }
+    currentToken = token.value;
+
+    // The token can arrive before or after sign-in finishes.
+    const uid = getSessionUid();
+    if (uid) claimDeviceForUser(uid);
   });
 
   PushNotifications.addListener("registrationError", (err) => {
@@ -113,29 +126,69 @@ export function attachPushListeners({ isAuthenticated }) {
     console.log("Push received (foreground):", notification);
   });
 
+  /*
+   * The user tapped a notification (from the tray, the lock screen, or a
+   * foreground banner). The server puts `audience` in the push data —
+   * which of this person's accounts it concerns. Store it and let
+   * PushIntentHandler open that account's notifications, switching or
+   * signing in first as needed. Stored rather than handled here because
+   * a tap can cold-start the app before auth or the router exist.
+   */
   PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
-    console.log("Push tapped:", action.notification);
+    const data = action?.notification?.data || {};
+
+    savePushIntent({
+      audience: data.audience || null,
+      notificationId: data.notificationId || null,
+      orderId: data.orderId || null
+    });
+
+    window.dispatchEvent(new Event(PUSH_INTENT_EVENT));
   });
 }
 
 /*
 |--------------------------------------------------------------------------
-| Call once login completes, in case "registration" fired first.
+| Device ownership
 |--------------------------------------------------------------------------
 */
 
-export function flushPendingDeviceToken() {
-  if (pendingToken) {
-    syncDeviceToken(pendingToken);
-    pendingToken = null;
+/*
+ * Register this device for the signed-in user. Called whenever the
+ * session's user changes. Switching between accounts of the SAME person
+ * (buyer <-> seller, work) keeps the same uid and is a no-op.
+ */
+export async function claimDeviceForUser(uid) {
+  if (!Capacitor.isNativePlatform()) return;
+  if (!uid || !currentToken) return; // registration will claim when the token arrives
+  if (claimedForUid === uid) return;
+
+  try {
+    await api.post("/users/me/device-token", { token: currentToken, platform: "android" });
+    claimedForUid = uid;
+  } catch (err) {
+    // Best-effort — a failed token sync shouldn't break the app.
+    console.error("Failed to register device for notifications:", err);
   }
 }
 
-async function syncDeviceToken(token) {
+/*
+ * Detach this device from the current user. Must run BEFORE the session
+ * is cleared — the request needs that user's auth token. If it never
+ * reaches the server (offline), the next sign-in on this device still
+ * detaches it from the old user server-side.
+ */
+export async function releaseDevice() {
+  if (!Capacitor.isNativePlatform()) return;
+
+  const token = currentToken;
+  claimedForUid = null;
+
+  if (!token) return;
+
   try {
-    await api.post("/users/me/device-token", { token, platform: "android" });
+    await api.delete("/users/me/device-token", { data: { token } });
   } catch (err) {
-    // Best-effort — a failed token sync shouldn't break the app.
-    console.error("Failed to sync device token:", err);
+    console.error("Failed to unregister device on sign-out:", err);
   }
 }

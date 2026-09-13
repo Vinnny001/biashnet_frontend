@@ -13,6 +13,7 @@ import {
   Typography
 } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import NotificationsIcon from "@mui/icons-material/NotificationsNone";
 import LogoutIcon from "@mui/icons-material/Logout";
 import PersonIcon from "@mui/icons-material/Person";
 
@@ -60,6 +61,10 @@ export default function InvestorLayout() {
           </Typography>
 
           <Box sx={{ flex: 1 }} />
+
+          <IconButton component={Link} to="/investor/notifications" aria-label="Notifications">
+            <NotificationsIcon sx={{ color: "primary.main" }} />
+          </IconButton>
 
           <TrendingUpIcon sx={{ color: "primary.main", mr: 1 }} />
 

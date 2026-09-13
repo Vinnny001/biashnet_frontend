@@ -4,6 +4,7 @@ import { Alert, Snackbar } from "@mui/material";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import AppRoutes from "./routes/AppRoutes";
+import PushIntentHandler from "./components/common/PushIntentHandler";
 import { AuthProvider } from "./context/AuthContext";
 import { EmployeeProvider } from "./context/EmployeeContext";
 import { CartProvider } from "./context/CartContext";
@@ -64,6 +65,7 @@ export default function App() {
             <CartProvider>
               <ModalProvider>
                 <AppRoutes />
+                <PushIntentHandler />
                 <BackButtonHandler />
                 <AppNotifications />
               </ModalProvider>

@@ -10,7 +10,8 @@ import { storage } from "../../utils/storage";
 import { ROLE_LABELS } from "../../utils/employeeRoles";
 
 
-import { ROLE_HOME } from "../../utils/roleRoutes";
+import { NOTIFICATIONS_PATH, ROLE_HOME } from "../../utils/roleRoutes";
+import { clearPushIntent, readPushIntent } from "../../utils/pushIntent";
 
 
 
@@ -44,6 +45,30 @@ export default function Login() {
   const [employeeRoleChoices, setEmployeeRoleChoices] = useState([]);
 
   /*
+   * Which account to preselect: the one a switcher sent them here for, or
+   * the one a tapped notification belongs to.
+   */
+  const [suggestedAccountType] = useState(
+    () => location.state?.accountType || readPushIntent()?.accountType || ""
+  );
+
+  /*
+   * Where to go once signed in. A pending tapped notification wins over
+   * the dashboard — it's the reason they're signing in. It is consumed
+   * here either way, so it can't redirect a later, unrelated sign-in.
+   */
+  function destinationFor(accountType) {
+    const intent = readPushIntent();
+
+    if (intent) {
+      clearPushIntent();
+      return NOTIFICATIONS_PATH[accountType] || ROLE_HOME[accountType] || "/";
+    }
+
+    return ROLE_HOME[accountType] || "/";
+  }
+
+  /*
    * Sends the user wherever their account type belongs, EXCEPT a work
    * account with more than one role — that stops here to ask which role
    * they want to work as first.
@@ -67,12 +92,12 @@ export default function Login() {
       }
     }
 
-    navigate(ROLE_HOME[nextUser?.role] || "/", { replace: true });
+    navigate(destinationFor(nextUser?.role), { replace: true });
   }
 
   function handlePickEmployeeRole(role) {
     storage.set(STORAGE_KEYS.EMPLOYEE_ROLE, role);
-    navigate(ROLE_HOME.employee, { replace: true });
+    navigate(destinationFor("employee"), { replace: true });
   }
 
   
@@ -168,6 +193,7 @@ export default function Login() {
               <LoginForm
                 step={step}
                 accountTypes={accountTypes}
+                defaultAccountType={suggestedAccountType}
                 loading={loading}
                 onCheckEmail={handleCheckEmail}
                 onLogin={handleLogin}

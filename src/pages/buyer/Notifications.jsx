@@ -52,7 +52,8 @@ const TYPE_STYLES = {
   ORDER_COMPLETED: { icon: CheckCircleRounded, color: "success" },
   ORDER_CANCELLED: { icon: ErrorOutlineRounded, color: "error" },
   ORDER_CANCELLED_REFUNDED: { icon: ErrorOutlineRounded, color: "error" },
-  SELLER_NON_COMPLIANT: { icon: AccessTimeRounded, color: "error" },
+  DROPOFF_NON_COMPLIANT: { icon: AccessTimeRounded, color: "error" },
+  FUNDS_RELEASED: { icon: PaymentsRounded, color: "success" },
   PARTIAL_FULFILLMENT_CHOICE: { icon: ReceiptLongRounded, color: "warning" },
 };
 
@@ -65,7 +66,24 @@ function orderIdOf(notification) {
   return notification?.orderId || notification?.data?.orderId || null;
 }
 
-export default function Notifications() {
+/*
+ * Where "View order" goes for each account. Only buyers have a per-order
+ * page; a seller's orders live on their orders list. Other accounts'
+ * notifications aren't about marketplace orders.
+ */
+function orderLinkFor(audience, orderId) {
+  if (!orderId) return null;
+  if (audience === "BUYER") return `/orders/${orderId}`;
+  if (audience === "SELLER") return "/seller/orders";
+  return null;
+}
+
+/*
+ * `audience` is the account this screen belongs to — each route passes
+ * its own, so one person's seller screen shows seller notifications and
+ * their buyer screen shows buyer ones.
+ */
+export default function Notifications({ audience = "BUYER" }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -76,7 +94,7 @@ export default function Notifications() {
       setLoading(true);
       setError("");
 
-      const response = await notificationService.list();
+      const response = await notificationService.list({ audience });
 
       setNotifications(
         Array.isArray(response?.notifications) ? response.notifications : []
@@ -87,7 +105,7 @@ export default function Notifications() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [audience]);
 
   useEffect(() => {
     load();
@@ -103,7 +121,7 @@ export default function Notifications() {
       setBusy(true);
       setError("");
 
-      await notificationService.markAllRead();
+      await notificationService.markAllRead(audience);
 
       /*
        * Update locally rather than refetching — the rows are already
@@ -231,7 +249,10 @@ export default function Notifications() {
 
                 const Icon = style.icon;
                 const unread = notification.read !== true;
-                const orderId = orderIdOf(notification);
+                const orderLink = orderLinkFor(
+                  notification.audience || audience,
+                  orderIdOf(notification)
+                );
 
                 return (
                   <Stack
@@ -306,10 +327,10 @@ export default function Notifications() {
                           {formatDate(notification.createdAt)}
                         </Typography>
 
-                        {orderId && (
+                        {orderLink && (
                           <Button
                             component={Link}
-                            to={`/orders/${orderId}`}
+                            to={orderLink}
                             size="small"
                             sx={{ fontWeight: 700 }}
                             onClick={(event) => event.stopPropagation()}

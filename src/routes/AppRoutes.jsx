@@ -81,10 +81,10 @@ const pageFallback = <Loading label="Loading page..." />;
  * putting an error boundary: a render throw in one page now shows an
  * error in the content area instead of blanking the whole app.
  */
-const withSuspense = (Component) => (
+const withSuspense = (Component, props = {}) => (
   <ErrorBoundary>
     <Suspense fallback={pageFallback}>
-      <Component />
+      <Component {...props} />
     </Suspense>
   </ErrorBoundary>
 );
@@ -132,7 +132,7 @@ export default function AppRoutes() {
           <Route path="/orders" element={withSuspense(BuyerOrders)} />
           <Route path="/orders/:id" element={withSuspense(OrderTracking)} />
           <Route path="/chat" element={withSuspense(BuyerChat)} />
-          <Route path="/notifications" element={withSuspense(Notifications)} />
+          <Route path="/notifications" element={withSuspense(Notifications, { audience: "BUYER" })} />
           <Route path="/profile" element={withSuspense(BuyerProfile)} />
           <Route path="/account/profile" element={withSuspense(SharedProfile)} />
           <Route path="/account/settings" element={withSuspense(SharedSettings)} />
@@ -149,12 +149,12 @@ export default function AppRoutes() {
           <Route path="orders" element={withSuspense(SellerOrders)} />
           <Route path="wallet" element={withSuspense(SellerWallet)} />
           {/*
-            Same feed as the buyer's — the backend scopes every row to the
-            caller's uid. It needs its own path because /notifications is
-            inside the buyer-only RoleRoute, so a seller tapping the bell
-            there would just be redirected away.
+            Every account type has its own notifications route, and each
+            passes its audience so the screen lists only that account's
+            notifications. Paths must match NOTIFICATIONS_PATH in
+            utils/roleRoutes.js — tapped pushes navigate by that map.
           */}
-          <Route path="notifications" element={withSuspense(Notifications)} />
+          <Route path="notifications" element={withSuspense(Notifications, { audience: "SELLER" })} />
           <Route path="analytics" element={withSuspense(SellerAnalytics)} />
           <Route path="chat" element={withSuspense(SellerChat)} />
           <Route path="profile" element={withSuspense(SellerProfile)} />
@@ -167,6 +167,7 @@ export default function AppRoutes() {
         <Route path="/employee" element={<EmployeeLayout />}>
           <Route index element={<Navigate to="/employee/dashboard" replace />} />
           <Route path="dashboard" element={withSuspense(EmployeeDashboard)} />
+          <Route path="notifications" element={withSuspense(Notifications, { audience: "EMPLOYEE" })} />
           <Route
             path="employees"
             element={
@@ -233,6 +234,7 @@ export default function AppRoutes() {
         <Route path="/investor" element={<InvestorLayout />}>
           <Route index element={<Navigate to="/investor/dashboard" replace />} />
           <Route path="dashboard" element={withSuspense(InvestorDashboard)} />
+          <Route path="notifications" element={withSuspense(Notifications, { audience: "INVESTOR" })} />
         </Route>
       </Route>
 
@@ -240,6 +242,7 @@ export default function AppRoutes() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={withSuspense(AdminDashboard)} />
+          <Route path="notifications" element={withSuspense(Notifications, { audience: "ADMIN" })} />
           <Route path="products" element={withSuspense(AdminProducts)} />
           <Route path="orders" element={withSuspense(AdminOrders)} />
           <Route path="users" element={withSuspense(AdminUsers)} />

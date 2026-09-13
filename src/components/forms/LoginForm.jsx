@@ -1,14 +1,23 @@
 import { Box, Button, FormControlLabel, Radio, RadioGroup, Stack, Typography } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Input from "../common/Input";
 
 const ACCOUNT_TYPE_LABELS = { buyer: "Buyer", seller: "Seller", investor: "Investor", admin: "Admin", employee: "Work Account" };
 
-export default function LoginForm({ step, accountTypes = [], onCheckEmail, onLogin, onVerifyOtp, onBack, loading = false }) {
+export default function LoginForm({ step, accountTypes = [], defaultAccountType = "", onCheckEmail, onLogin, onVerifyOtp, onBack, loading = false }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [accountType, setAccountType] = useState("");
   const [code, setCode] = useState("");
+
+  // Preselect the account they came here for (a tapped notification or
+  // the account switcher) — but only once we know this email actually
+  // has that account, and never over a choice they've already made.
+  useEffect(() => {
+    if (!accountType && defaultAccountType && accountTypes.includes(defaultAccountType)) {
+      setAccountType(defaultAccountType);
+    }
+  }, [accountTypes, defaultAccountType, accountType]);
 
   if (step === "email") {
     return (
