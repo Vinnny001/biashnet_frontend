@@ -23,6 +23,14 @@ const SELF_CANCELLABLE_STATUSES = [
   "OUT_FOR_DELIVERY",
 ];
 
+// Paid but not yet handed over — the window in which the buyer needs their code.
+const CODE_VISIBLE_STATUSES = [
+  "PAID",
+  "PROCESSING",
+  "READY_FOR_DELIVERY",
+  "OUT_FOR_DELIVERY",
+];
+
 export default function OrderTracking() {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
@@ -31,6 +39,7 @@ export default function OrderTracking() {
   const [cancelling, setCancelling] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [deliveryCode, setDeliveryCode] = useState(null);
 
   const loadOrder = useCallback(() => {
     setLoading(true);
@@ -44,6 +53,25 @@ export default function OrderTracking() {
   useEffect(() => {
     loadOrder();
   }, [loadOrder]);
+
+  /*
+   * The delivery code only exists once the order is paid, and is only
+   * useful until it's handed over. It's fetched separately because it is
+   * decrypted for the buyer alone — it isn't part of the order record.
+   */
+  const awaitingHandover = CODE_VISIBLE_STATUSES.includes(order?.status);
+
+  useEffect(() => {
+    if (!awaitingHandover) {
+      setDeliveryCode(null);
+      return;
+    }
+
+    orderService
+      .getDeliveryCode(id)
+      .then((payload) => setDeliveryCode(payload?.code || null))
+      .catch(() => setDeliveryCode(null));
+  }, [id, awaitingHandover]);
 
   async function handleResolve(decision) {
     try {
@@ -110,6 +138,30 @@ export default function OrderTracking() {
         <Alert severity="error" onClose={() => setError("")}>
           {error}
         </Alert>
+      )}
+
+      {deliveryCode && (
+        <Card sx={{ borderRadius: 2.5, border: "1px solid", borderColor: "primary.main", boxShadow: "none" }}>
+          <CardContent>
+            <Stack spacing={1}>
+              <Typography variant="body2" color="text.secondary">
+                Your delivery code
+              </Typography>
+              <Typography
+                variant="h4"
+                fontWeight={900}
+                sx={{ fontFamily: "monospace", letterSpacing: 2 }}
+              >
+                {deliveryCode}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                It's the same as the account number in your M-PESA payment message.
+                Only give it to the Biashnet rider after you've received and checked
+                your order. Giving it out releases payment to the seller.
+              </Typography>
+            </Stack>
+          </CardContent>
+        </Card>
       )}
 
       {order?.customerDecisionRequired && (

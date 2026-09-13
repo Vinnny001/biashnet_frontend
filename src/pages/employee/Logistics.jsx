@@ -432,9 +432,10 @@ export default function Logistics() {
             <Typography fontWeight={800}>3 · Confirm final delivery to buyer</Typography>
           </Stack>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            On handover the buyer gives you their completion code. Verifying it
-            completes the order and releases each seller's funds — so only enter a
-            code the buyer has actually given you in person.
+            On handover the buyer reads you the account number from their M-PESA
+            payment message, like 45682/08/26. Verifying it completes the order and
+            releases each seller's funds, so only enter a code the buyer has given
+            you in person.
           </Typography>
           <Box component="form" onSubmit={handleVerifyFinalDelivery}>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "flex-end" }}>
@@ -445,10 +446,16 @@ export default function Logistics() {
                 onChange={(e) => setFinalOrderId(e.target.value)}
                 sx={{ minWidth: 260 }}
               />
+              {/*
+                Codes are NNNNN/MM/YY (11 characters, with slashes). Orders paid
+                before that still have a 6-digit code, which also fits here.
+                The server accepts spaces or dashes in place of slashes.
+              */}
               <TextField
-                label="Buyer's completion code"
+                label="Buyer's delivery code"
+                placeholder="45682/08/26"
                 required
-                inputProps={{ maxLength: 6, inputMode: "numeric" }}
+                inputProps={{ maxLength: 14, autoComplete: "off", spellCheck: false }}
                 value={finalCode}
                 onChange={(e) => setFinalCode(e.target.value)}
               />

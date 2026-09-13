@@ -17,6 +17,26 @@ export async function getOrder(orderId) {
 
 /*
 =========================================================
+GET MY DELIVERY CODE (buyer only)
+=========================================================
+
+The code the buyer reads out to the Biashnet rider — the
+same number as the account reference in their M-PESA
+message (e.g. 45682/08/26). Returns { code } or
+{ code: null } before payment or once it's been used.
+=========================================================
+*/
+
+export async function getDeliveryCode(orderId) {
+
+    return paymentApi.get(
+        `/marketplace/order-completion/${orderId}/code`
+    );
+}
+
+
+/*
+=========================================================
 GET BUYER ORDERS
 =========================================================
 */
@@ -182,6 +202,11 @@ export const orderService = {
     resolvePartial(orderId, decision) {
 
         return resolvePartial(orderId, decision);
+    },
+
+    getDeliveryCode(orderId) {
+
+        return getDeliveryCode(orderId);
     },
 
     getMySubOrders,
