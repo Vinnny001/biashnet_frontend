@@ -1,5 +1,10 @@
 {
   "appId": "com.biashnet.app",
   "appName": "Biashnet",
-  "webDir": "dist"
+  "webDir": "dist",
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
 }

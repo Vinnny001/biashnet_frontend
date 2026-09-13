@@ -103,9 +103,13 @@ export function attachPushListeners({ isAuthenticated }) {
   });
 
   PushNotifications.addListener("pushNotificationReceived", (notification) => {
-    // App is in the foreground — the OS won't show a banner on its own.
-    // Nothing to do here beyond logging for now; in-app notifications
-    // already live in Firestore and are visible in the app itself.
+    // App is in the foreground. Android hands the message to the app
+    // instead of showing it, so on its own this would be silent. The
+    // banner comes from presentationOptions ("alert") in
+    // capacitor.config.json: the plugin then posts a native notification
+    // on the message's channelId (biashnet_default, IMPORTANCE_HIGH).
+    // That config is baked in at build time — `npx cap sync` and rebuild
+    // the APK after changing it.
     console.log("Push received (foreground):", notification);
   });
 
