@@ -17,6 +17,8 @@
     --panel: #f5f7f5;
     --warn: #8a5a00;
     --warn-panel: #fff6e5;
+    /* A deeper shade of the logo's gold, so it stays readable on white. */
+    --gold: #a77a22;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -29,6 +31,7 @@
       --panel: #1b1e1d;
       --warn: #f0b653;
       --warn-panel: #2a2213;
+      --gold: #e0b35a;
     }
   }
   * { box-sizing: border-box; }
@@ -40,11 +43,15 @@
     font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
   main { max-width: 720px; margin: 0 auto; padding: 36px 20px 72px; }
-  .brand { color: var(--accent); font-weight: 800; letter-spacing: .06em; font-size: 14px; text-transform: uppercase; }
-  h1 { font-size: 30px; line-height: 1.2; margin: 6px 0 6px; }
+  .brand-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .logo { display: block; width: 82px; height: 48px; }
+  .brand { color: var(--gold); font-weight: 800; letter-spacing: .06em; font-size: 14px; text-transform: uppercase; }
+  h1 { color: var(--accent); font-size: 30px; line-height: 1.2; margin: 6px 0 6px; }
   h2 { font-size: 20px; margin: 36px 0 10px; }
   .muted { color: var(--muted); }
   a { color: var(--accent); }
+  /* Email addresses in gold; the green "Email a deletion request" button keeps its own colours. */
+  a[href^="mailto:"]:not(.button) { color: var(--gold); }
   ul { padding-left: 22px; margin: 8px 0; }
   li { margin: 5px 0; }
 
@@ -86,7 +93,10 @@
 <body>
 <main>
 
-  <div class="brand">Biashnet · BIASHNET LTD</div>
+  <div class="brand-row">
+    <img class="logo" src="/images/biashnet-logo.png" alt="Biashnet logo" width="82" height="48">
+    <div class="brand">Biashnet · BIASHNET LTD</div>
+  </div>
   <h1>Delete your Biashnet account</h1>
   <p class="muted">For the Biashnet app and website. Last updated: 13 September 2026</p>
 
@@ -137,7 +147,8 @@
   <p>Read our <a href="/privacy-policy.html">Privacy Policy</a> for how we collect, use and protect your data, and your rights under the Kenya Data Protection Act, 2019.</p>
 
   <footer class="muted">
-    BIASHNET LTD · Kenya · <a href="mailto:biashnetltd@gmail.com">biashnetltd@gmail.com</a>
+    <div>BIASHNET LTD · Kenya · <a href="mailto:biashnetltd@gmail.com">biashnetltd@gmail.com</a></div>
+    <div>© 2026 BIASHNET LTD. All rights reserved.</div>
   </footer>
 
 </main>
