@@ -14,6 +14,8 @@
     --line: #e4e4ea;
     --accent: #0b6b3a;
     --panel: #f5f7f5;
+    /* A deeper shade of the logo's gold, so it stays readable on white. */
+    --gold: #a77a22;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -23,6 +25,7 @@
       --line: #2b2e2d;
       --accent: #4cc38a;
       --panel: #1b1e1d;
+      --gold: #e0b35a;
     }
   }
   * { box-sizing: border-box; }
@@ -37,8 +40,8 @@
   header { border-bottom: 1px solid var(--line); padding-bottom: 20px; margin-bottom: 28px; }
   .brand-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
   .logo { display: block; width: 82px; height: 48px; }
-  .brand { color: var(--accent); font-weight: 800; letter-spacing: .06em; font-size: 14px; text-transform: uppercase; }
-  h1 { font-size: 32px; line-height: 1.2; margin: 6px 0 8px; }
+  .brand { color: var(--gold); font-weight: 800; letter-spacing: .06em; font-size: 14px; text-transform: uppercase; }
+  h1 { color: var(--accent); font-size: 32px; line-height: 1.2; margin: 6px 0 8px; }
   h2 { font-size: 21px; margin: 40px 0 10px; scroll-margin-top: 16px; }
   h3 { font-size: 17px; margin: 22px 0 6px; }
   p, li { color: var(--text); }
@@ -46,6 +49,7 @@
   ul { padding-left: 22px; margin: 8px 0; }
   li { margin: 5px 0; }
   a { color: var(--accent); }
+  a[href^="mailto:"] { color: var(--gold); }
   nav { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 20px; }
   nav ol { margin: 6px 0 0; padding-left: 20px; columns: 2; column-gap: 28px; }
   nav li { margin: 3px 0; break-inside: avoid; }
