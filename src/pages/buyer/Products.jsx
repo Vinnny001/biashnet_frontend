@@ -16,17 +16,59 @@ import RecommendedSection from "../../components/product/RecommendedSection";
 
 import InfiniteProductGrid from "../../components/product/InfiniteProductGrid";
 
+import { useSearchParams } from "react-router-dom";
+
 import { productService } from "../../services/product.service";
 import { normalizeList } from "../../utils/helpers";
 
+/*
+ * The landing page and the public nav link here as
+ * /products?category=services (and houses, adverts). "Products" there
+ * means the whole marketplace, so it maps to no filter at all; the rest
+ * match the category stored on a listing.
+ */
+function categoryFromUrl(value) {
+
+const param =
+String(value||"")
+.trim()
+.toLowerCase();
+
+if(!param||param==="products"||param==="all"){
+
+return "All";
+
+}
+
+return param;
+
+}
+
 export default function Products() {
+
+const [searchParams]=useSearchParams();
+
+const urlCategory=categoryFromUrl(
+searchParams.get("category")
+);
 
 const [products,setProducts]=useState([]);
 const [loading,setLoading]=useState(true);
 
 const [search,setSearch]=useState("");
 
-const [category,setCategory]=useState("All");
+const [category,setCategory]=useState(urlCategory);
+
+/*
+Follow the address bar: clicking Services in the nav while already on
+this page changes the query string, not the page.
+*/
+
+useEffect(()=>{
+
+setCategory(urlCategory);
+
+},[urlCategory]);
 
 const [sort,setSort]=useState("latest");
 
@@ -70,9 +112,21 @@ products
 )
 ];
 
+/*
+Keep the category from the address bar in the list even when nothing
+is listed under it yet, so the chip stays selected and the shopper can
+see which filter emptied the page.
+*/
+
+if(category!=="All"&&!list.includes(category)){
+
+list.push(category);
+
+}
+
 return ["All",...list];
 
-},[products]);
+},[products,category]);
 
 const filteredProducts=useMemo(()=>{
 

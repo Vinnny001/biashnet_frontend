@@ -15,7 +15,13 @@ import { useAuth } from "../../hooks/useAuth";
 import { useCart } from "../../hooks/useCart";
 import Navbar from "./Navbar";
 
-const NAVBAR_PATHS = ["/", "/home", "/login", "/buyer/home"];
+/*
+ * Where the marketplace nav and cart belong: the landing page and every
+ * public shopping page. They stay off the admin pages, which use this
+ * same header.
+ */
+const MARKETPLACE_PATHS = ["/", "/home", "/login", "/buyer/home"];
+const MARKETPLACE_PREFIXES = ["/products", "/search", "/cart", "/wishlist"];
 
 export default function Header({ onMenu }) {
   const navigate = useNavigate();
@@ -23,7 +29,9 @@ export default function Header({ onMenu }) {
   const { count } = useCart();
   const { isAuthenticated, logout, user } = useAuth();
 
-  const showExtras = NAVBAR_PATHS.includes(location.pathname);
+  const showExtras =
+    MARKETPLACE_PATHS.includes(location.pathname) ||
+    MARKETPLACE_PREFIXES.some((path) => location.pathname.startsWith(path));
   return (
     <AppBar
       position="sticky"

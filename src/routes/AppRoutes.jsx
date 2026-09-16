@@ -10,6 +10,7 @@ import Loading from "../components/common/Loading";
 import ErrorBoundary from "../components/common/ErrorBoundary";
 import RoleRoute from "./RoleRoute";
 import EmployeeRoute from "./EmployeeRoute";
+import MarketplaceLayout from "./MarketplaceLayout";
 
 const AdminAnalytics = lazy(() => import("../pages/admin/Analytics"));
 const AdminDashboard = lazy(() => import("../pages/admin/Dashboard"));
@@ -106,22 +107,23 @@ export default function AppRoutes() {
       </Route>
 
       {/*
-        ROOT
-        Logged out -> Landing. Logged in -> whichever home matches the
-        account they signed in as (see routes/RoleRedirect.jsx). This
-        deliberately sits outside BuyerLayout so the landing page isn't
-        wrapped in buyer chrome (cart badge, buyer nav) for visitors.
-      */}
-      <Route path="/" element={withSuspense(RoleRedirect)} />
+        PUBLIC MARKETPLACE
+        Open to visitors, so the layout follows the visitor: signed out
+        they get the public layout the landing page uses, signed in they
+        get buyer chrome. See routes/MarketplaceLayout.jsx — without it a
+        visitor browsing products was shown a buyer's notifications bell.
 
-<Route element={<BuyerLayout />}>
-  {/* PUBLIC MARKETPLACE */}
-  <Route path="/products" element={withSuspense(Products)} />
-  <Route path="/products/:id" element={withSuspense(ProductDetails)} />
-  <Route path="/search" element={withSuspense(SearchResults)} />
-  <Route path="/cart" element={withSuspense(Cart)} />
-  <Route path="/wishlist" element={withSuspense(Wishlist)} />
-</Route>
+        ROOT: logged out -> Landing. Logged in -> whichever home matches
+        the account they signed in as (see routes/RoleRedirect.jsx).
+      */}
+      <Route element={<MarketplaceLayout />}>
+        <Route path="/" element={withSuspense(RoleRedirect)} />
+        <Route path="/products" element={withSuspense(Products)} />
+        <Route path="/products/:id" element={withSuspense(ProductDetails)} />
+        <Route path="/search" element={withSuspense(SearchResults)} />
+        <Route path="/cart" element={withSuspense(Cart)} />
+        <Route path="/wishlist" element={withSuspense(Wishlist)} />
+      </Route>
 
       <Route element={<RoleRoute allow={["buyer"]} />}>
         <Route element={<BuyerLayout />}>

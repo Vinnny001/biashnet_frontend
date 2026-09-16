@@ -5,13 +5,14 @@ import { NavLink } from "react-router-dom";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 
+// Matches the categories on the landing page; nothing here needs an account.
 const guestLinks = [
   { label: "Home", to: "/" },
   { label: "Products", to: "/products" },
-  { label: "Services", to: "/services" },
-  { label: "Houses", to: "/houses" },
-  { label: "My Orders", to: "/orders" },
-  
+  { label: "Services", to: "/products?category=services" },
+  { label: "Houses", to: "/products?category=houses" },
+  { label: "Adverts", to: "/products?category=adverts" },
+  { label: "Cart", to: "/cart" },
   { label: "About", to: "/about" },
   { label: "Sign up", to: "/signup" }
 ];
