@@ -76,6 +76,17 @@ export const productService = {
 
   /*
   |--------------------------------------------------------------------------
+  | LEAVE A REVIEW — main API, buyer-only
+  |--------------------------------------------------------------------------
+  | One review per buyer per listing: posting again edits theirs.
+  */
+
+  addReview(id, { rating, comment }) {
+    return api.post(`/products/${id}/reviews`, { rating, comment });
+  },
+
+  /*
+  |--------------------------------------------------------------------------
   | TRACK VIEW — main API
   |--------------------------------------------------------------------------
   */

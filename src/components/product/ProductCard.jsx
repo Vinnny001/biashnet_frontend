@@ -9,22 +9,30 @@ import {
 } from "@mui/material";
 
 import FavoriteBorderRoundedIcon from "@mui/icons-material/FavoriteBorderRounded";
+import FavoriteRoundedIcon from "@mui/icons-material/FavoriteRounded";
 import ShoppingCartRoundedIcon from "@mui/icons-material/ShoppingCartRounded";
 import FlashOnRoundedIcon from "@mui/icons-material/FlashOnRounded";
 import VerifiedRoundedIcon from "@mui/icons-material/VerifiedRounded";
 import LocationOnRoundedIcon from "@mui/icons-material/LocationOnRounded";
 import StarRoundedIcon from "@mui/icons-material/StarRounded";
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import ProductImage from "./ProductImage";
 import { useCart } from "../../hooks/useCart";
+import { useAuth } from "../../hooks/useAuth";
+import { useWishlist } from "../../hooks/useWishlist";
 import { formatCurrency } from "../../utils/formatters";
 
 export default function ProductCard({ product }) {
   const { addItem } = useCart();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const { canLike, isLiked, toggle, likeCountOf } = useWishlist();
 
   const id = product.id || product._id;
   const name = product.name || product.title || "Product";
+  const liked = isLiked(id);
+  const likeCount = likeCountOf(product);
 
   const image =
     product.images?.[0]?.thumb ||
@@ -139,24 +147,62 @@ export default function ProductCard({ product }) {
           )}
         </Stack>
 
-        {/* FAVORITE */}
-        <IconButton
-          onClick={(e) => e.preventDefault()}
-          size="small"
-          sx={{
-            position: "absolute",
-            top: 7,
-            right: 7,
-            bgcolor: "rgba(3, 8, 1, 0.95)",
-            "&:hover": {
-              bgcolor: "#dd0b0b",
-            },
-          }}
-        >
-          <FavoriteBorderRoundedIcon
-            fontSize="small"
-          />
-        </IconButton>
+        {/*
+          FAVORITE
+          Only a buyer can like, so a seller or admin signed into their own
+          account doesn't see the heart at all. A visitor does see it, and
+          tapping it takes them to sign in — that's the point of it.
+        */}
+        {(canLike || !isAuthenticated) && (
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={0.25}
+            sx={{
+              position: "absolute",
+              top: 7,
+              right: 7,
+              pr: likeCount > 0 ? 0.75 : 0,
+              borderRadius: 5,
+              bgcolor: "rgba(3, 8, 1, 0.95)",
+            }}
+          >
+            <IconButton
+              aria-label={liked ? "Remove from your likes" : "Add to your likes"}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+
+                if (!canLike) {
+                  navigate("/login");
+                  return;
+                }
+
+                toggle(id);
+              }}
+              size="small"
+              sx={{
+                color: liked ? "#dd0b0b" : "#fff",
+                "&:hover": { color: "#dd0b0b", bgcolor: "transparent" },
+              }}
+            >
+              {liked ? (
+                <FavoriteRoundedIcon fontSize="small" />
+              ) : (
+                <FavoriteBorderRoundedIcon fontSize="small" />
+              )}
+            </IconButton>
+
+            {likeCount > 0 && (
+              <Typography
+                variant="caption"
+                sx={{ color: "#fff", fontWeight: 700, lineHeight: 1 }}
+              >
+                {likeCount}
+              </Typography>
+            )}
+          </Stack>
+        )}
 
         {!inStock && (
           <Chip

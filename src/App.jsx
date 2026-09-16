@@ -8,6 +8,7 @@ import PushIntentHandler from "./components/common/PushIntentHandler";
 import { AuthProvider } from "./context/AuthContext";
 import { EmployeeProvider } from "./context/EmployeeContext";
 import { CartProvider } from "./context/CartContext";
+import { WishlistProvider } from "./context/WishlistContext";
 import { ModalProvider } from "./context/ModalContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { UserProvider } from "./context/UserContext";
@@ -63,12 +64,14 @@ export default function App() {
         <EmployeeProvider>
           <UserProvider>
             <CartProvider>
-              <ModalProvider>
-                <AppRoutes />
-                <PushIntentHandler />
-                <BackButtonHandler />
-                <AppNotifications />
-              </ModalProvider>
+              <WishlistProvider>
+                <ModalProvider>
+                  <AppRoutes />
+                  <PushIntentHandler />
+                  <BackButtonHandler />
+                  <AppNotifications />
+                </ModalProvider>
+              </WishlistProvider>
             </CartProvider>
           </UserProvider>
         </EmployeeProvider>

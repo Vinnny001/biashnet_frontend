@@ -15,7 +15,7 @@ import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VerifiedIcon from "@mui/icons-material/Verified";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import Card from "../../components/common/Card";
 import Loading from "../../components/common/Loading";
@@ -51,14 +51,20 @@ export default function ProductDetails() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [buyNowOpen, setBuyNowOpen] = useState(false);
-  useEffect(() => {
+
+  // Set from the product response: true only for a buyer whose order arrived.
+  const [canReview, setCanReview] = useState(false);
+
+  const load = useCallback(() => {
     setLoading(true);
-    Promise.allSettled([productService.get(id), productService.reviews(id)])
+    return Promise.allSettled([productService.get(id), productService.reviews(id)])
       .then(([productResult, reviewResult]) => {
         if (productResult.status === "fulfilled") {
           const payload = productResult.value;
           const product = payload?.data?.data ?? payload?.data ?? payload;
           setProduct(product?.id ? product : null);
+          // The server says whether this shopper's order for it has arrived.
+          setCanReview(payload?.canReview === true);
         } else {
           console.error("Failed to load product:", productResult.reason);
         }
@@ -71,6 +77,10 @@ export default function ProductDetails() {
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   // ADD THIS — fires once the product has loaded
   useEffect(() => {
@@ -264,7 +274,14 @@ export default function ProductDetails() {
       </Grid>
 
       <Grid item xs={12}>
-        <ProductReviews reviews={reviews} rating={product.rating} count={product.reviewCount} />
+        <ProductReviews
+          reviews={reviews}
+          rating={product.rating}
+          count={product.reviewCount}
+          productId={product.id}
+          canReview={canReview}
+          onReviewSaved={load}
+        />
       </Grid>
 
        <BuyNowDialog
