@@ -33,6 +33,7 @@ import { Link } from "react-router-dom";
 import Loading from "../../components/common/Loading";
 
 import { notificationService } from "../../services/notification.service";
+import { announceNotificationsChanged } from "../../hooks/useUnreadNotifications";
 import { getErrorMessage } from "../../utils/errors";
 import { formatDate } from "../../utils/formatters";
 
@@ -153,6 +154,9 @@ export default function Notifications({ audience = "BUYER" }) {
       setNotifications((current) =>
         current.map((n) => ({ ...n, read: true }))
       );
+
+      // Clear the bell in the header too.
+      announceNotificationsChanged();
     } catch (err) {
       console.error("Failed to clear notifications:", err);
       setError(getErrorMessage(err, "Could not clear your notifications."));
@@ -172,6 +176,7 @@ export default function Notifications({ audience = "BUYER" }) {
 
     try {
       await notificationService.markRead(notification.id);
+      announceNotificationsChanged();
     } catch (err) {
       /*
        * Marking read is a convenience, not the point of the tap — if it

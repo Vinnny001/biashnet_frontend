@@ -697,6 +697,13 @@ export const APP_EVENTS = {
   ORDER_UPDATED:
     "biashnet:order-updated",
 
+  /*
+   * Notifications were read, or a new one arrived — the bells in the
+   * layouts listen for this to update their unread count.
+   */
+  NOTIFICATIONS_UPDATED:
+    "biashnet:notifications-updated",
+
 };
 
 

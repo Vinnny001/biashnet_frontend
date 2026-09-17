@@ -47,6 +47,7 @@ import { Outlet } from "react-router-dom";
 
 import { useAuth } from "../hooks/useAuth";
 import { useEmployee } from "../hooks/useEmployee";
+import { useUnreadNotifications } from "../hooks/useUnreadNotifications";
 
 const sellerLinks = [
   {
@@ -146,6 +147,8 @@ export default function SellerLayout() {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { isEmployee } = useEmployee();
+  // Seller updates only — never this person's buyer notifications.
+  const { count: unreadNotifications } = useUnreadNotifications("SELLER");
 
   const currentPath = location.pathname;
 
@@ -280,7 +283,11 @@ export default function SellerLayout() {
               <IconButton
                 onClick={() => navigate("/seller/notifications")}
               >
-                <Badge badgeContent={3} color="error">
+                <Badge
+                  badgeContent={unreadNotifications}
+                  max={99}
+                  color="error"
+                >
                   <NotificationsNoneRounded />
                 </Badge>
               </IconButton>

@@ -19,12 +19,14 @@ import PersonIcon from "@mui/icons-material/Person";
 
 import { APP_NAME } from "../utils/constants";
 import { useAuth } from "../hooks/useAuth";
+import { useUnreadNotifications } from "../hooks/useUnreadNotifications";
 import AccountSwitcher from "../components/common/AccountSwitcher";
 
 export default function InvestorLayout() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [profileAnchor, setProfileAnchor] = useState(null);
+  const { count: unreadNotifications } = useUnreadNotifications("INVESTOR");
 
   const initials = user?.name
     ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
@@ -63,7 +65,9 @@ export default function InvestorLayout() {
           <Box sx={{ flex: 1 }} />
 
           <IconButton component={Link} to="/investor/notifications" aria-label="Notifications">
-            <NotificationsIcon sx={{ color: "primary.main" }} />
+            <Badge badgeContent={unreadNotifications} max={99} color="error">
+              <NotificationsIcon sx={{ color: "primary.main" }} />
+            </Badge>
           </IconButton>
 
           <TrendingUpIcon sx={{ color: "primary.main", mr: 1 }} />

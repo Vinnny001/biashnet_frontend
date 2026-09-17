@@ -20,6 +20,7 @@ import PaymentsIcon from "@mui/icons-material/Payments";
 import { APP_NAME } from "../utils/constants";
 import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../hooks/useCart";
+import { useUnreadNotifications } from "../hooks/useUnreadNotifications";
 import AccountSwitcher from "../components/common/AccountSwitcher";
 
 const GOLD = "#d4af37";
@@ -44,6 +45,8 @@ export default function BuyerLayout() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { count } = useCart();
+  // This account's unread notifications — buyer updates only.
+  const { count: unreadNotifications } = useUnreadNotifications("BUYER");
   const activeNav = useActiveNav();
   const [profileAnchor, setProfileAnchor] = useState(null);
 
@@ -107,7 +110,9 @@ export default function BuyerLayout() {
               <ChatIcon fontSize="small" sx={{ color: GOLD }} />
             </IconButton>
             <IconButton component={Link} to="/notifications" size="small">
-              <NotificationsIcon fontSize="small" sx={{ color: GOLD }} />
+              <Badge badgeContent={unreadNotifications} max={99} color="error">
+                <NotificationsIcon fontSize="small" sx={{ color: GOLD }} />
+              </Badge>
             </IconButton>
             <IconButton size="small" onClick={(e) => setProfileAnchor(e.currentTarget)}>
               <Avatar sx={{ width: 30, height: 30, bgcolor: "primary.main", fontSize: "0.75rem" }}>
@@ -127,7 +132,9 @@ export default function BuyerLayout() {
               <ChatIcon sx={{ color: GOLD }} />
             </IconButton>
             <IconButton component={Link} to="/notifications">
-              <NotificationsIcon sx={{ color: GOLD }} />
+              <Badge badgeContent={unreadNotifications} max={99} color="error">
+                <NotificationsIcon sx={{ color: GOLD }} />
+              </Badge>
             </IconButton>
             <IconButton onClick={(e) => setProfileAnchor(e.currentTarget)}>
               <Avatar sx={{ width: 34, height: 34, bgcolor: "primary.main", fontSize: "0.85rem" }}>

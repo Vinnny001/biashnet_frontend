@@ -4,6 +4,7 @@ import { Capacitor } from "@capacitor/core";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { api } from "./api";
 import { PUSH_INTENT_EVENT, savePushIntent } from "../utils/pushIntent";
+import { announceNotificationsChanged } from "../hooks/useUnreadNotifications";
 
 /*
 |--------------------------------------------------------------------------
@@ -124,6 +125,9 @@ export function attachPushListeners({ getUserId }) {
     // That config is baked in at build time — `npx cap sync` and rebuild
     // the APK after changing it.
     console.log("Push received (foreground):", notification);
+
+    // Bump the bell in the header without waiting for the next poll.
+    announceNotificationsChanged();
   });
 
   /*
