@@ -33,6 +33,17 @@ const NAV_ITEMS = [
   { label: "Orders",   to: "/orders",   icon: ReceiptLongIcon }
 ];
 
+/*
+ * The header icons say where you are: gold on the page it opens, white
+ * everywhere else. Without this the bell and chat were gold always, so
+ * they read as "selected" on every screen.
+ */
+function useIconColor() {
+  const { pathname } = useLocation();
+
+  return (to) => (pathname.startsWith(to) ? GOLD : "#fff");
+}
+
 function useActiveNav() {
   const { pathname } = useLocation();
   const idx = NAV_ITEMS.findIndex((item) =>
@@ -47,6 +58,7 @@ export default function BuyerLayout() {
   const { count } = useCart();
   // This account's unread notifications — buyer updates only.
   const { count: unreadNotifications } = useUnreadNotifications("BUYER");
+  const iconColor = useIconColor();
   const activeNav = useActiveNav();
   const [profileAnchor, setProfileAnchor] = useState(null);
 
@@ -103,15 +115,18 @@ export default function BuyerLayout() {
           <Box sx={{ display: { xs: "flex", md: "none" }, gap: 0.5 }}>
             <IconButton component={Link} to="/cart" size="small">
               <Badge badgeContent={count} color="primary">
-                <ShoppingCartIcon fontSize="small" />
+                <ShoppingCartIcon fontSize="small" sx={{ color: iconColor("/cart") }} />
               </Badge>
             </IconButton>
             <IconButton component={Link} to="/chat" size="small">
-              <ChatIcon fontSize="small" sx={{ color: GOLD }} />
+              <ChatIcon fontSize="small" sx={{ color: iconColor("/chat") }} />
             </IconButton>
             <IconButton component={Link} to="/notifications" size="small">
               <Badge badgeContent={unreadNotifications} max={99} color="error">
-                <NotificationsIcon fontSize="small" sx={{ color: GOLD }} />
+                <NotificationsIcon
+                  fontSize="small"
+                  sx={{ color: iconColor("/notifications") }}
+                />
               </Badge>
             </IconButton>
             <IconButton size="small" onClick={(e) => setProfileAnchor(e.currentTarget)}>
@@ -125,15 +140,15 @@ export default function BuyerLayout() {
           <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 1 }}>
             <IconButton component={Link} to="/cart">
               <Badge badgeContent={count} color="primary">
-                <ShoppingCartIcon />
+                <ShoppingCartIcon sx={{ color: iconColor("/cart") }} />
               </Badge>
             </IconButton>
             <IconButton component={Link} to="/chat">
-              <ChatIcon sx={{ color: GOLD }} />
+              <ChatIcon sx={{ color: iconColor("/chat") }} />
             </IconButton>
             <IconButton component={Link} to="/notifications">
               <Badge badgeContent={unreadNotifications} max={99} color="error">
-                <NotificationsIcon sx={{ color: GOLD }} />
+                <NotificationsIcon sx={{ color: iconColor("/notifications") }} />
               </Badge>
             </IconButton>
             <IconButton onClick={(e) => setProfileAnchor(e.currentTarget)}>

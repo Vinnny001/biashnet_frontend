@@ -155,8 +155,8 @@ export default function Notifications({ audience = "BUYER" }) {
         current.map((n) => ({ ...n, read: true }))
       );
 
-      // Clear the bell in the header too.
-      announceNotificationsChanged();
+      // Clear the bell in the header at the same moment, not on its next poll.
+      announceNotificationsChanged({ audience, unreadCount: 0 });
     } catch (err) {
       console.error("Failed to clear notifications:", err);
       setError(getErrorMessage(err, "Could not clear your notifications."));
@@ -174,9 +174,14 @@ export default function Notifications({ audience = "BUYER" }) {
       )
     );
 
+    // One fewer unread, on the bell as well, before the request finishes.
+    announceNotificationsChanged({
+      audience,
+      unreadCount: Math.max(0, unreadCount - 1),
+    });
+
     try {
       await notificationService.markRead(notification.id);
-      announceNotificationsChanged();
     } catch (err) {
       /*
        * Marking read is a convenience, not the point of the tap — if it

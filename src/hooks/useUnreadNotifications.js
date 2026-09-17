@@ -57,19 +57,35 @@ export function useUnreadNotifications(audience) {
       if (document.visibilityState === "visible") refresh();
     };
 
-    window.addEventListener(APP_EVENTS.NOTIFICATIONS_UPDATED, refresh);
+    /*
+     * The notifications screen knows the new count the moment a row is
+     * read, so it sends it along and the bell changes at once. Anything
+     * else (an arriving push) just says "something changed" and we ask.
+     */
+    const onChanged = (event) => {
+      const detail = event?.detail;
+
+      if (detail?.audience === audience && typeof detail.unreadCount === "number") {
+        setCount(detail.unreadCount);
+        return;
+      }
+
+      refresh();
+    };
+
+    window.addEventListener(APP_EVENTS.NOTIFICATIONS_UPDATED, onChanged);
     window.addEventListener("focus", refresh);
     document.addEventListener("visibilitychange", onVisible);
 
     const timer = setInterval(refresh, POLL_MS);
 
     return () => {
-      window.removeEventListener(APP_EVENTS.NOTIFICATIONS_UPDATED, refresh);
+      window.removeEventListener(APP_EVENTS.NOTIFICATIONS_UPDATED, onChanged);
       window.removeEventListener("focus", refresh);
       document.removeEventListener("visibilitychange", onVisible);
       clearInterval(timer);
     };
-  }, [refresh, isAuthenticated]);
+  }, [refresh, isAuthenticated, audience]);
 
   return { count, refresh };
 }
@@ -77,7 +93,12 @@ export function useUnreadNotifications(audience) {
 /*
  * Tell every bell on screen that notifications changed — read on the
  * notifications screen, or a new one just pushed to the device.
+ *
+ * Pass { audience, unreadCount } when the caller already knows the new
+ * count, and that bell updates immediately instead of asking the server.
  */
-export function announceNotificationsChanged() {
-  window.dispatchEvent(new Event(APP_EVENTS.NOTIFICATIONS_UPDATED));
+export function announceNotificationsChanged(detail = null) {
+  window.dispatchEvent(
+    new CustomEvent(APP_EVENTS.NOTIFICATIONS_UPDATED, { detail })
+  );
 }

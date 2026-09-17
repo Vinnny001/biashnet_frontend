@@ -81,11 +81,45 @@ export function CartProvider({ children }) {
         return;
       }
 
+      /*
+       * Show it in the cart badge straight away. Waiting for the save and
+       * then a reload of the whole cart made adding an item feel broken —
+       * two round trips before the number moved. The reload still runs and
+       * corrects this (prices, ids, merged quantities); a failure puts the
+       * badge back where it was.
+       */
+      setServerItems((current) => {
+        const existing = current.find((item) => item.productId === productId);
+
+        if (existing) {
+          return current.map((item) =>
+            item.productId === productId
+              ? { ...item, quantity: Number(item.quantity || 0) + quantity }
+              : item
+          );
+        }
+
+        return [
+          ...current,
+          {
+            id: `pending-${productId}`,
+            productId,
+            title: product.title || product.name,
+            image: product.images?.[0]?.thumb || product.image,
+            price: product.price,
+            category: product.category,
+            quantity,
+            sellerId: product.sellerId,
+          },
+        ];
+      });
+
       try {
         await cartService.addItem(productId, quantity);
-        await refreshServerCart();
       } catch {
         // optionally surface a notification here via your NotificationContext
+      } finally {
+        await refreshServerCart();
       }
     },
     [isLoggedIn, refreshServerCart, setLocalItems]
