@@ -27,12 +27,26 @@ export function CartProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const hasMergedRef = useRef(false);
 
+  /*
+   * Bumped by every local change to the cart. A reload that was already
+   * in flight when the change happened is answering an older question,
+   * and applying it makes the badge jump backwards — 11, then 10, then 11
+   * again as the newer reload lands. Such a reply is dropped; the reload
+   * that follows the change brings the truth.
+   */
+  const changeCountRef = useRef(0);
+
   const isLoggedIn = Boolean(user);
 
   const refreshServerCart = useCallback(async () => {
+    const asOf = changeCountRef.current;
+
     setLoading(true);
     try {
       const res = await cartService.list();
+
+      if (changeCountRef.current !== asOf) return;
+
       const list = res?.data ?? res ?? [];
       setServerItems(Array.isArray(list) ? list.map(normalizeServerItem) : []);
     } catch {
@@ -88,6 +102,8 @@ export function CartProvider({ children }) {
        * corrects this (prices, ids, merged quantities); a failure puts the
        * badge back where it was.
        */
+      changeCountRef.current += 1;
+
       setServerItems((current) => {
         const existing = current.find((item) => item.productId === productId);
 
@@ -136,11 +152,20 @@ export function CartProvider({ children }) {
         return;
       }
 
+      changeCountRef.current += 1;
+
+      setServerItems((current) =>
+        quantity <= 0
+          ? current.filter((item) => item.id !== id)
+          : current.map((item) => (item.id === id ? { ...item, quantity } : item))
+      );
+
       try {
         await cartService.updateQuantity(id, quantity);
-        await refreshServerCart();
       } catch {
         // optionally notify
+      } finally {
+        await refreshServerCart();
       }
     },
     [isLoggedIn, refreshServerCart, setLocalItems]
@@ -153,11 +178,16 @@ export function CartProvider({ children }) {
         return;
       }
 
+      changeCountRef.current += 1;
+
+      setServerItems((current) => current.filter((item) => item.id !== id));
+
       try {
         await cartService.removeItem(id);
-        await refreshServerCart();
       } catch {
         // optionally notify
+      } finally {
+        await refreshServerCart();
       }
     },
     [isLoggedIn, refreshServerCart, setLocalItems]
@@ -168,9 +198,11 @@ export function CartProvider({ children }) {
       setLocalItems([]);
       return;
     }
+    changeCountRef.current += 1;
+    setServerItems([]);
+
     try {
       await cartService.clear();
-      setServerItems([]);
     } catch {
       // optionally notify
     }
