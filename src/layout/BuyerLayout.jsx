@@ -1,234 +1,586 @@
+// src/layouts/BuyerLayout.jsx
+
 import { useState } from "react";
-import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+
 import {
-  AppBar, Avatar, Badge, BottomNavigation, BottomNavigationAction,
-  Box, Divider, IconButton, ListItemIcon, Menu, MenuItem,
-  Paper, Toolbar, Typography
+  AppBar,
+  Avatar,
+  Badge,
+  Box,
+  BottomNavigation,
+  BottomNavigationAction,
+  Divider,
+  IconButton,
+  ListItemIcon,
+  Menu,
+  MenuItem,
+  Paper,
+  Toolbar,
+  Typography,
+  InputBase,
+  Tooltip,
 } from "@mui/material";
-import HomeIcon from "@mui/icons-material/Home";
-import StoreIcon from "@mui/icons-material/Store";
-import MiscellaneousServicesIcon from "@mui/icons-material/MiscellaneousServices";
-import HomeWorkIcon from "@mui/icons-material/HomeWork";
-import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
-import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import ChatIcon from "@mui/icons-material/Chat";
-import NotificationsIcon from "@mui/icons-material/Notifications";
-import PersonIcon from "@mui/icons-material/Person";
-import SettingsIcon from "@mui/icons-material/Settings";
-import LogoutIcon from "@mui/icons-material/Logout";
-import PaymentsIcon from "@mui/icons-material/Payments";
+
+import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
+import ExploreRoundedIcon from "@mui/icons-material/ExploreRounded";
+import ShoppingCartRoundedIcon from "@mui/icons-material/ShoppingCartRounded";
+import ReceiptLongRoundedIcon from "@mui/icons-material/ReceiptLongRounded";
+import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
+import NotificationsRoundedIcon from "@mui/icons-material/NotificationsRounded";
+import ChatRoundedIcon from "@mui/icons-material/ChatRounded";
+import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
+import PaymentsRoundedIcon from "@mui/icons-material/PaymentsRounded";
+import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
+import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
+import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
+import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
+
 import { APP_NAME } from "../utils/constants";
 import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../hooks/useCart";
 import { useUnreadNotifications } from "../hooks/useUnreadNotifications";
+import { useThemeMode } from "../context/ThemeContext";
 import AccountSwitcher from "../components/common/AccountSwitcher";
 
-const GOLD = "#d4af37";
-
-const NAV_ITEMS = [
-  { label: "Home",     to: "/buyer/home",     icon: HomeIcon },
-  { label: "Products", to: "/products", icon: StoreIcon },
-  { label: "Services", to: "/services", icon: MiscellaneousServicesIcon },
-  { label: "Houses",   to: "/houses",   icon: HomeWorkIcon },
-  { label: "Orders",   to: "/orders",   icon: ReceiptLongIcon }
+const NAV = [
+  { label: "Home", to: "/buyer/products", icon: HomeRoundedIcon },
+  { label: "Explore", to: "/explore", icon: ExploreRoundedIcon },
+  { label: "Cart", to: "/cart", icon: ShoppingCartRoundedIcon },
+  { label: "Orders", to: "/orders", icon: ReceiptLongRoundedIcon },
+  { label: "Account", to: "/profile", icon: PersonRoundedIcon },
 ];
 
-/*
- * The header icons say where you are: gold on the page it opens, white
- * everywhere else. Without this the bell and chat were gold always, so
- * they read as "selected" on every screen.
- */
-function useIconColor() {
-  const { pathname } = useLocation();
-
-  return (to) => (pathname.startsWith(to) ? GOLD : "#fff");
-}
-
-function useActiveNav() {
-  const { pathname } = useLocation();
-  const idx = NAV_ITEMS.findIndex((item) =>
-    item.to === "/buyer/home" ? pathname === "/buyer/home" : pathname.startsWith(item.to)
-  );
-  return idx;
-}
+const isActive = (pathname, to) => {
+  if (to === "/buyer/products") return pathname === to;
+  return pathname.startsWith(to);
+};
 
 export default function BuyerLayout() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const { count } = useCart();
-  // This account's unread notifications — buyer updates only.
-  const { count: unreadNotifications } = useUnreadNotifications("BUYER");
-  const iconColor = useIconColor();
-  const activeNav = useActiveNav();
-  const [profileAnchor, setProfileAnchor] = useState(null);
+  const { pathname } = useLocation();
 
-  const initials = user?.name
-    ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
-    : "U";
+  const { user, logout } = useAuth();
+  const { count: cartCount } = useCart();
+  const { count: unreadNotifications } =
+    useUnreadNotifications("BUYER");
+
+  const { isDark, changeTheme } = useThemeMode();
+
+  const [profileAnchor, setProfileAnchor] = useState(null);
+  const [search, setSearch] = useState("");
+
+  const activeIndex = NAV.findIndex((item) =>
+    isActive(pathname, item.to)
+  );
+
+  const initials =
+    user?.name
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "U";
+
+  const submitSearch = (e) => {
+    e.preventDefault();
+
+    const query = search.trim();
+
+    if (query) {
+      navigate(`/search?q=${encodeURIComponent(query)}`);
+    }
+  };
+
+  const closeMenu = () => setProfileAnchor(null);
+
+  const go = (path) => {
+    navigate(path);
+    closeMenu();
+  };
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      {/* ─── TOP APPBAR ─── */}
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: "background.default",
+        color: "text.primary",
+      }}
+    >
+      {/* ================= HEADER ================= */}
+
       <AppBar
         position="sticky"
-        color="transparent"
         elevation={0}
-        sx={{ bgcolor: "background.default", borderBottom: "1px solid", borderColor: "divider", zIndex: 1200 }}
+        sx={{
+          top: 0,
+          zIndex: 1200,
+          bgcolor: "background.paper",
+          borderBottom: "1px solid",
+          borderColor: "divider",
+        }}
       >
-        <Toolbar sx={{ gap: 1 }}>
-          {/* Brand */}
+        {/* TOP ROW */}
+
+        <Toolbar
+          sx={{
+            minHeight: { xs: 56, md: 64 },
+            px: { xs: 1.5, sm: 2, md: 3 },
+            gap: { xs: 0.5, md: 2 },
+          }}
+        >
+          {/* LOGO */}
+
           <Typography
             component={Link}
-            to="/buyer/home"
-            variant="h5"
-            sx={{ color: "primary.main", fontWeight: 800, textDecoration: "none", flexShrink: 0 }}
+            to="/buyer/products"
+            sx={{
+              color: "primary.main",
+              fontWeight: 900,
+              fontSize: { xs: "1.15rem", md: "1.4rem" },
+              letterSpacing: "-0.5px",
+              textDecoration: "none",
+              flexShrink: 0,
+            }}
           >
             {APP_NAME}
           </Typography>
 
-          {/* ── DESKTOP NAV LINKS ── */}
-          <Box sx={{ display: { xs: "none", md: "flex" }, gap: 0.5, ml: 3, flex: 1 }}>
-            {NAV_ITEMS.map((item, i) => (
-              <Box
-                key={item.to}
-                component={Link}
-                to={item.to}
-                sx={{
-                  px: 1.5,
-                  py: 0.5,
-                  borderRadius: 1,
-                  fontSize: "0.9rem",
-                  fontWeight: activeNav === i ? 700 : 400,
-                  color: activeNav === i ? "primary.main" : "text.primary",
-                  textDecoration: "none",
-                  "&:hover": { bgcolor: "action.hover" }
-                }}
-              >
-                {item.label}
-              </Box>
-            ))}
+          {/* DESKTOP NAV */}
+
+          <Box
+            sx={{
+              display: { xs: "none", md: "flex" },
+              alignItems: "center",
+              gap: 0.5,
+              flex: 1,
+            }}
+          >
+            {NAV.slice(0, 2).map((item) => {
+              const Icon = item.icon;
+              const active = isActive(pathname, item.to);
+
+              return (
+                <Box
+                  key={item.to}
+                  component={Link}
+                  to={item.to}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.7,
+                    px: 1.5,
+                    py: 1,
+                    borderRadius: 2,
+                    textDecoration: "none",
+                    color: active
+                      ? "primary.main"
+                      : "text.secondary",
+                    fontWeight: active ? 800 : 600,
+                    "&:hover": {
+                      bgcolor: "action.hover",
+                    },
+                  }}
+                >
+                  <Icon fontSize="small" />
+                  {item.label}
+                </Box>
+              );
+            })}
           </Box>
 
-          <Box sx={{ flex: 1, display: { md: "none" } }} />
+          {/* DESKTOP SEARCH */}
 
-          {/* ── MOBILE TOP-RIGHT ICONS ── */}
-          <Box sx={{ display: { xs: "flex", md: "none" }, gap: 0.5 }}>
-            <IconButton component={Link} to="/cart" size="small">
-              <Badge badgeContent={count} color="primary">
-                <ShoppingCartIcon fontSize="small" sx={{ color: iconColor("/cart") }} />
-              </Badge>
-            </IconButton>
-            <IconButton component={Link} to="/chat" size="small">
-              <ChatIcon fontSize="small" sx={{ color: iconColor("/chat") }} />
-            </IconButton>
-            <IconButton component={Link} to="/notifications" size="small">
-              <Badge badgeContent={unreadNotifications} max={99} color="error">
-                <NotificationsIcon
-                  fontSize="small"
-                  sx={{ color: iconColor("/notifications") }}
-                />
-              </Badge>
-            </IconButton>
-            <IconButton size="small" onClick={(e) => setProfileAnchor(e.currentTarget)}>
-              <Avatar sx={{ width: 30, height: 30, bgcolor: "primary.main", fontSize: "0.75rem" }}>
+          <Box
+            component="form"
+            onSubmit={submitSearch}
+            sx={{
+              display: { xs: "none", md: "flex" },
+              alignItems: "center",
+              width: { md: 300, lg: 420 },
+              height: 42,
+              px: 1.5,
+              borderRadius: 3,
+              bgcolor: "action.hover",
+              border: "1px solid",
+              borderColor: "divider",
+              "&:focus-within": {
+                borderColor: "primary.main",
+              },
+            }}
+          >
+            <SearchRoundedIcon
+              sx={{ color: "text.secondary", mr: 1 }}
+            />
+
+            <InputBase
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search products, services..."
+              fullWidth
+              sx={{
+                color: "text.primary",
+                fontSize: ".9rem",
+              }}
+            />
+          </Box>
+
+          {/* DESKTOP ACTIONS */}
+
+          <Box
+            sx={{
+              display: { xs: "none", md: "flex" },
+              alignItems: "center",
+              gap: 0.5,
+            }}
+          >
+            <Tooltip title="Chat">
+              <IconButton onClick={() => navigate("/chat")}>
+                <ChatRoundedIcon />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Notifications">
+              <IconButton
+                onClick={() => navigate("/notifications")}
+              >
+                <Badge
+                  badgeContent={unreadNotifications}
+                  max={99}
+                  color="error"
+                >
+                  <NotificationsRoundedIcon />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Cart">
+              <IconButton onClick={() => navigate("/cart")}>
+                <Badge
+                  badgeContent={cartCount}
+                  max={99}
+                  color="primary"
+                >
+                  <ShoppingCartRoundedIcon />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+
+            <IconButton
+              onClick={(e) => setProfileAnchor(e.currentTarget)}
+            >
+              <Avatar
+                sx={{
+                  width: 36,
+                  height: 36,
+                  bgcolor: "primary.main",
+                  color: "primary.contrastText",
+                  fontSize: ".8rem",
+                  fontWeight: 800,
+                }}
+              >
                 {initials}
               </Avatar>
             </IconButton>
           </Box>
 
-          {/* ── DESKTOP RIGHT: profile (expands to show cart/chat/bell) ── */}
-          <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 1 }}>
-            <IconButton component={Link} to="/cart">
-              <Badge badgeContent={count} color="primary">
-                <ShoppingCartIcon sx={{ color: iconColor("/cart") }} />
+          {/* MOBILE ACTIONS */}
+
+          <Box
+            sx={{
+              display: { xs: "flex", md: "none" },
+              alignItems: "center",
+              gap: 0.2,
+              ml: "auto",
+            }}
+          >
+            <IconButton
+              size="small"
+              onClick={() => navigate("/notifications")}
+            >
+              <Badge
+                badgeContent={unreadNotifications}
+                max={99}
+                color="error"
+              >
+                <NotificationsRoundedIcon fontSize="small" />
               </Badge>
             </IconButton>
-            <IconButton component={Link} to="/chat">
-              <ChatIcon sx={{ color: iconColor("/chat") }} />
-            </IconButton>
-            <IconButton component={Link} to="/notifications">
-              <Badge badgeContent={unreadNotifications} max={99} color="error">
-                <NotificationsIcon sx={{ color: iconColor("/notifications") }} />
+
+            <IconButton
+              size="small"
+              onClick={() => navigate("/cart")}
+            >
+              <Badge
+                badgeContent={cartCount}
+                max={99}
+                color="primary"
+              >
+                <ShoppingCartRoundedIcon fontSize="small" />
               </Badge>
             </IconButton>
-            <IconButton onClick={(e) => setProfileAnchor(e.currentTarget)}>
-              <Avatar sx={{ width: 34, height: 34, bgcolor: "primary.main", fontSize: "0.85rem" }}>
+
+            <IconButton
+              size="small"
+              onClick={(e) => setProfileAnchor(e.currentTarget)}
+            >
+              <Avatar
+                sx={{
+                  width: 32,
+                  height: 32,
+                  bgcolor: "primary.main",
+                  color: "primary.contrastText",
+                  fontSize: ".7rem",
+                  fontWeight: 800,
+                }}
+              >
                 {initials}
               </Avatar>
             </IconButton>
           </Box>
         </Toolbar>
+
+        {/* MOBILE SEARCH */}
+
+        <Box
+          component="form"
+          onSubmit={submitSearch}
+          sx={{
+            display: { xs: "flex", md: "none" },
+            mx: 1.5,
+            mb: 1.2,
+            height: 44,
+            alignItems: "center",
+            px: 1.5,
+            borderRadius: 3,
+            bgcolor: "action.hover",
+            border: "1px solid",
+            borderColor: "divider",
+            "&:focus-within": {
+              borderColor: "primary.main",
+            },
+          }}
+        >
+          <SearchRoundedIcon
+            sx={{
+              color: "text.secondary",
+              mr: 1,
+            }}
+          />
+
+          <InputBase
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search products, services & more"
+            fullWidth
+            sx={{
+              color: "text.primary",
+              fontSize: ".85rem",
+            }}
+          />
+        </Box>
       </AppBar>
 
-      {/* ── PROFILE DROPDOWN MENU (shared mobile + desktop) ── */}
+      {/* ================= PROFILE MENU ================= */}
+
       <Menu
         anchorEl={profileAnchor}
         open={Boolean(profileAnchor)}
-        onClose={() => setProfileAnchor(null)}
-        transformOrigin={{ horizontal: "right", vertical: "top" }}
-        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+        onClose={closeMenu}
+        PaperProps={{
+          sx: {
+            mt: 1,
+            minWidth: 220,
+            borderRadius: 3,
+          },
+        }}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "right",
+        }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
       >
-        {user?.name && (
-          <Box sx={{ px: 2, py: 1 }}>
-            <Typography variant="subtitle2" fontWeight={700}>{user.name}</Typography>
-            <Typography variant="caption" color="text.secondary">{user.email}</Typography>
-          </Box>
-        )}
+        <Box sx={{ px: 2, py: 1.5 }}>
+          <Typography fontWeight={800}>
+            {user?.name || "My Account"}
+          </Typography>
+
+          {user?.email && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                display: "block",
+                maxWidth: 190,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {user.email}
+            </Typography>
+          )}
+        </Box>
+
         <Divider />
-        <MenuItem onClick={() => { navigate("/profile"); setProfileAnchor(null); }}>
-          <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
+
+        <MenuItem onClick={() => go("/profile")}>
+          <ListItemIcon>
+            <PersonRoundedIcon fontSize="small" />
+          </ListItemIcon>
           Profile
         </MenuItem>
-        <MenuItem onClick={() => { navigate("/account/settings"); setProfileAnchor(null); }}>
-          <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
+
+        <MenuItem onClick={() => go("/account/settings")}>
+          <ListItemIcon>
+            <SettingsRoundedIcon fontSize="small" />
+          </ListItemIcon>
           Settings
         </MenuItem>
-        <MenuItem onClick={() => { navigate("/buyer/payments"); setProfileAnchor(null); }}>
-          <ListItemIcon><PaymentsIcon fontSize="small" /></ListItemIcon>
+
+        <MenuItem onClick={() => go("/buyer/payments")}>
+          <ListItemIcon>
+            <PaymentsRoundedIcon fontSize="small" />
+          </ListItemIcon>
           Payment History
         </MenuItem>
-        {/*
-          No direct jump into the work account from here — a buyer/seller
-          session is not OTP-verified, so entering an employee/admin/investor
-          area has to go through a fresh sign-in. AccountSwitcher shows those
-          accounts (locked) and routes to login instead.
-        */}
-        <AccountSwitcher onDone={() => setProfileAnchor(null)} />
+
         <Divider />
-        <MenuItem onClick={() => { logout(); setProfileAnchor(null); }}>
-          <ListItemIcon><LogoutIcon fontSize="small" /></ListItemIcon>
+
+        {/* THEME */}
+
+        <MenuItem
+          onClick={() =>
+            changeTheme(isDark ? "light" : "dark")
+          }
+        >
+          <ListItemIcon>
+            {isDark ? (
+              <LightModeRoundedIcon fontSize="small" />
+            ) : (
+              <DarkModeRoundedIcon fontSize="small" />
+            )}
+          </ListItemIcon>
+
+          {isDark ? "Light Mode" : "Dark Mode"}
+        </MenuItem>
+
+        <AccountSwitcher onDone={closeMenu} />
+
+        <Divider />
+
+        <MenuItem
+          onClick={() => {
+            logout();
+            closeMenu();
+          }}
+        >
+          <ListItemIcon>
+            <LogoutRoundedIcon fontSize="small" />
+          </ListItemIcon>
           Logout
         </MenuItem>
       </Menu>
 
-      {/* ── PAGE CONTENT ── */}
-      <Box component="main" sx={{ flex: 1, p: { xs: 2, md: 3 }, pb: { xs: 10, md: 3 } }}>
+      {/* ================= CONTENT ================= */}
+
+      <Box
+        component="main"
+        sx={{
+          width: "100%",
+          maxWidth: 1440,
+          mx: "auto",
+
+          px: {
+            xs: 1.25,
+            sm: 2,
+            md: 3,
+            lg: 4,
+          },
+
+          pt: {
+            xs: 1.5,
+            sm: 2,
+            md: 3,
+          },
+
+          pb: {
+            xs: "88px",
+            md: 3,
+          },
+        }}
+      >
         <Outlet />
       </Box>
 
-      {/* ── MOBILE BOTTOM NAV ── */}
+      {/* ================= MOBILE NAV ================= */}
+
       <Paper
-        elevation={4}
-        sx={{ position: "fixed", bottom: 0, left: 0, right: 0, display: { xs: "block", md: "none" }, zIndex: 1300 }}
+        elevation={10}
+        sx={{
+          display: { xs: "block", md: "none" },
+          position: "fixed",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 1300,
+
+          borderTop: "1px solid",
+          borderColor: "divider",
+
+          pb: "env(safe-area-inset-bottom)",
+        }}
       >
         <BottomNavigation
-          value={activeNav === -1 ? false : activeNav}
-          onChange={(_, newValue) => navigate(NAV_ITEMS[newValue].to)}
-          showLabels={false}
+          value={activeIndex === -1 ? false : activeIndex}
+          onChange={(_, index) => navigate(NAV[index].to)}
+          sx={{
+            height: 62,
+            bgcolor: "background.paper",
+          }}
         >
-          {NAV_ITEMS.map((item, i) => (
-            <BottomNavigationAction
-              key={item.to}
-              icon={<item.icon />}
-              label={item.label}
-              showLabel={activeNav === i}
-              sx={{
-                color: activeNav === i ? "primary.main" : "text.secondary",
-                minWidth: 0,
-                "& .MuiBottomNavigationAction-label": { fontSize: "0.65rem" }
-              }}
-            />
-          ))}
+          {NAV.map((item, index) => {
+            const Icon = item.icon;
+            const active = activeIndex === index;
+
+            return (
+              <BottomNavigationAction
+                key={item.to}
+                label={item.label}
+                icon={
+                  item.label === "Cart" ? (
+                    <Badge
+                      badgeContent={cartCount}
+                      color="primary"
+                      max={99}
+                    >
+                      <Icon />
+                    </Badge>
+                  ) : (
+                    <Icon />
+                  )
+                }
+                sx={{
+                  minWidth: 0,
+                  px: 0.5,
+
+                  color: "text.secondary",
+
+                  "&.Mui-selected": {
+                    color: "primary.main",
+                  },
+
+                  "& .MuiBottomNavigationAction-label": {
+                    fontSize: ".65rem",
+                    fontWeight: active ? 800 : 600,
+                    mt: 0.3,
+                  },
+                }}
+              />
+            );
+          })}
         </BottomNavigation>
       </Paper>
     </Box>

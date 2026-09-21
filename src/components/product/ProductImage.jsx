@@ -1,23 +1,18 @@
 import { Box } from "@mui/material";
 import ImageIcon from "@mui/icons-material/ImageNotSupported";
 
-const IMAGE_SIZE = 180; // adjust to taste — same value used for width & height
-
 export default function ProductImage({
   src,
   alt = "Product image",
-  size = IMAGE_SIZE,
 }) {
   return (
     <Box
       sx={{
-        width: size,
-        height: size,
-        flexShrink: 0,
-        bgcolor: "background.paper",
-        border: "1px solid",
-        borderColor: "divider",
-        borderRadius: 2,
+        width: "100%",
+        height: "100%",
+        minWidth: 0,
+        minHeight: 0,
+        bgcolor: "action.hover",
         overflow: "hidden",
       }}
     >
@@ -45,11 +40,10 @@ export default function ProductImage({
             justifyContent: "center",
             gap: 0.5,
             color: "text.secondary",
-            bgcolor: "grey.100",
           }}
         >
           <ImageIcon fontSize="small" />
-          <Box component="span" sx={{ fontSize: 12 }}>
+          <Box component="span" sx={{ fontSize: 11 }}>
             No image
           </Box>
         </Box>

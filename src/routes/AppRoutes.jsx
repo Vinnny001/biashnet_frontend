@@ -117,7 +117,7 @@ export default function AppRoutes() {
         the account they signed in as (see routes/RoleRedirect.jsx).
       */}
       <Route element={<MarketplaceLayout />}>
-        <Route path="/" element={withSuspense(RoleRedirect)} />
+        <Route path="/" element={withSuspense(Products)} />
         <Route path="/products" element={withSuspense(Products)} />
         <Route path="/products/:id" element={withSuspense(ProductDetails)} />
         <Route path="/search" element={withSuspense(SearchResults)} />
@@ -127,7 +127,7 @@ export default function AppRoutes() {
 
       <Route element={<RoleRoute allow={["buyer"]} />}>
         <Route element={<BuyerLayout />}>
-          <Route path="/buyer/home" element={withSuspense(Home)} />
+          <Route path="/buyer/products" element={withSuspense(Products)} />
           <Route path="/checkout" element={withSuspense(Checkout)} />
           <Route path="/buyer/payment/:orderId" element={withSuspense(Payment)} />
           <Route path="/buyer/payments" element={withSuspense(PaymentHistory)} />

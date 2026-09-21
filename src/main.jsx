@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { AppThemeProvider } from "./context/ThemeContext";
+
 import "./styles/variables.css";
 import "./styles/index.css";
 import "./styles/responsive.css";
