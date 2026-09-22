@@ -12,7 +12,10 @@ import ShoppingBagRoundedIcon from "@mui/icons-material/ShoppingBagRounded";
 import PersonAddAltRoundedIcon from "@mui/icons-material/PersonAddAltRounded";
 import LoginRoundedIcon from "@mui/icons-material/LoginRounded";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+// Products added to the page per scroll — roughly a screenful on a phone.
+const PAGE_SIZE = 24;
 import {
   useNavigate,
   useSearchParams,
@@ -95,6 +98,19 @@ export default function Products() {
   }, [urlCategory]);
 
   const [sort, setSort] = useState("latest");
+
+  /*
+   * How many of the matching products are on screen. Every one of them
+   * used to be rendered at once — 262 cards and 262 images on a phone
+   * before it would show anything. They now arrive a screenful at a time
+   * as you scroll (InfiniteProductGrid asks for more).
+   */
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  const showMore = useCallback(
+    () => setVisibleCount((current) => current + PAGE_SIZE),
+    []
+  );
 
   const [drawerOpen, setDrawerOpen] =
     useState(false);
@@ -209,6 +225,19 @@ export default function Products() {
     category,
     filters,
   ]);
+
+  const visibleProducts = useMemo(
+    () => filteredProducts.slice(0, visibleCount),
+    [filteredProducts, visibleCount]
+  );
+
+  /*
+   * Back to the first screenful whenever the list itself changes —
+   * searching or filtering should not leave you deep in an old scroll.
+   */
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [search, category, filters, sort]);
 
   /*
    * STOREFRONT SECTIONS
@@ -655,11 +684,13 @@ export default function Products() {
 
             <Box sx={{ mt: 1.5 }}>
               <InfiniteProductGrid
-                products={
-                  filteredProducts
-                }
+                products={visibleProducts}
                 loading={false}
-                hasMore={false}
+                hasMore={
+                  visibleProducts.length <
+                  filteredProducts.length
+                }
+                onLoadMore={showMore}
               />
             </Box>
           </Box>
