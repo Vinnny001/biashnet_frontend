@@ -28,7 +28,6 @@ const Signup = lazy(() => import("../pages/auth/Signup"));
 const Cart = lazy(() => import("../pages/buyer/Cart"));
 const BuyerChat = lazy(() => import("../pages/buyer/Chat"));
 const Checkout = lazy(() => import("../pages/buyer/Checkout"));
-const Home = lazy(() => import("../pages/buyer/Home"));
 const Notifications = lazy(() => import("../pages/buyer/Notifications"));
 const BuyerOrders = lazy(() => import("../pages/buyer/Orders"));
 const OrderTracking = lazy(() => import("../pages/buyer/OrderTracking"));
@@ -117,7 +116,7 @@ export default function AppRoutes() {
         the account they signed in as (see routes/RoleRedirect.jsx).
       */}
       <Route element={<MarketplaceLayout />}>
-        <Route path="/" element={withSuspense(Products)} />
+        <Route path="/" element={withSuspense(RoleRedirect)} />
         <Route path="/products" element={withSuspense(Products)} />
         <Route path="/products/:id" element={withSuspense(ProductDetails)} />
         <Route path="/search" element={withSuspense(SearchResults)} />

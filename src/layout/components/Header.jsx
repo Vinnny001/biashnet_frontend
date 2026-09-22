@@ -20,7 +20,7 @@ import Navbar from "./Navbar";
  * public shopping page. They stay off the admin pages, which use this
  * same header.
  */
-const MARKETPLACE_PATHS = ["/", "/home", "/login", "/buyer/home"];
+const MARKETPLACE_PATHS = ["/", "/home", "/login", "/buyer/products"];
 const MARKETPLACE_PREFIXES = ["/products", "/search", "/cart", "/wishlist"];
 
 export default function Header({ onMenu }) {
