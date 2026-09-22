@@ -38,8 +38,16 @@ export default function ProductGrid({ products = [] }) {
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns:
-            "repeat(auto-fill, minmax(min(100%, 165px), 1fr))",
+          /*
+           * Two across on a phone, always. Asking for 165px-wide columns
+           * left one product per row instead: the layout's padding and
+           * the page's own leave about 300px on a 360px screen, so a
+           * second column never fit and each card went full width.
+           */
+          gridTemplateColumns: {
+            xs: "repeat(2, minmax(0, 1fr))",
+            sm: "repeat(auto-fill, minmax(min(100%, 190px), 1fr))",
+          },
           gap: { xs: 1, sm: 1.5, md: 2 },
           alignItems: "stretch",
         }}
