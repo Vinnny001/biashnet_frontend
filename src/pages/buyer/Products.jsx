@@ -1,6 +1,8 @@
 import {
+  Alert,
   Box,
   Button,
+  CircularProgress,
   Fab,
   Stack,
   Typography,
@@ -35,9 +37,9 @@ import RecommendedSection from "../../components/product/RecommendedSection";
 
 import InfiniteProductGrid from "../../components/product/InfiniteProductGrid";
 
-import { productService } from "../../services/product.service";
-import { normalizeList } from "../../utils/helpers";
 import { useAuth } from "../../hooks/useAuth";
+import { useProducts } from "../../hooks/useProducts";
+import { useServerWaking } from "../../hooks/useServerWaking";
 
 /*
  * The landing page and the public nav link here as
@@ -82,9 +84,6 @@ export default function Products() {
     searchParams.get("category")
   );
 
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-
   const [search, setSearch] = useState("");
 
   const [category, setCategory] =
@@ -98,6 +97,21 @@ export default function Products() {
   }, [urlCategory]);
 
   const [sort, setSort] = useState("latest");
+
+  /*
+   * The marketplace, and whether we are still waiting for it. Keeping
+   * `loading` and `error` apart from "the list is empty" is the whole point:
+   * a request in flight, or one that failed, must never be shown as a
+   * marketplace with nothing in it.
+   */
+  const { products, loading, error, reload } = useProducts({ sort });
+
+  /*
+   * The API sleeps between visitors on its free tier and can take most of a
+   * minute to come back. Reads retry themselves; this says so, because a
+   * silent minute of skeletons reads as a broken app.
+   */
+  const serverWaking = useServerWaking();
 
   /*
    * How many of the matching products are on screen. Every one of them
@@ -117,21 +131,6 @@ export default function Products() {
 
   const [filters, setFilters] =
     useState(DEFAULT_FILTERS);
-
-  /*
-   * KEEPING YOUR WORKING PRODUCT LOADING LOGIC.
-   */
-  useEffect(() => {
-    setLoading(true);
-
-    productService
-      .list({ sort })
-      .then((res) =>
-        setProducts(normalizeList(res))
-      )
-      .catch(() => setProducts([]))
-      .finally(() => setLoading(false));
-  }, [sort]);
 
   /*
    * Categories come from actual marketplace data.
@@ -321,14 +320,6 @@ export default function Products() {
     );
   };
 
-  /*
-   * YOUR EXISTING LOADING FLOW.
-   *
-   * We intentionally keep this outside the
-   * main storefront so the existing API
-   * behaviour remains unchanged.
-   */
- 
   return (
     <Box
       sx={{
@@ -682,10 +673,67 @@ export default function Products() {
               />
             </Box>
 
+            {/*
+              A re-sort with products already on screen: they stay, and this
+              says the new order is on its way.
+            */}
+            {loading && products.length > 0 && (
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ mt: 1.5 }}
+              >
+                <CircularProgress size={14} />
+
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
+                  Updating listings…
+                </Typography>
+              </Stack>
+            )}
+
+            {serverWaking && loading && (
+              <Alert
+                severity="info"
+                icon={<CircularProgress size={18} />}
+                sx={{ mt: 1.5 }}
+              >
+                Waking up the marketplace — this can take up to a minute
+                after a quiet spell. Hang on, we'll keep trying.
+              </Alert>
+            )}
+
+            {/*
+              Failed while there is still something to read. The grid keeps
+              showing it; the notice belongs up here, not in place of it.
+            */}
+            {error && !loading && products.length > 0 && (
+              <Alert
+                severity="warning"
+                sx={{ mt: 1.5 }}
+                action={
+                  <Button
+                    size="small"
+                    color="inherit"
+                    onClick={reload}
+                  >
+                    Retry
+                  </Button>
+                }
+              >
+                {error}
+              </Alert>
+            )}
+
             <Box sx={{ mt: 1.5 }}>
               <InfiniteProductGrid
                 products={visibleProducts}
-                loading={false}
+                loading={loading}
+                error={error}
+                onRetry={reload}
                 hasMore={
                   visibleProducts.length <
                   filteredProducts.length

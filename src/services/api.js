@@ -8,6 +8,8 @@ import {
 
 import { storage } from "../utils/storage";
 
+import { installRetry } from "./apiRetry";
+
 
 /*
 |--------------------------------------------------------------------------
@@ -292,6 +294,20 @@ api.interceptors.response.use(
 
 /*
 |--------------------------------------------------------------------------
+| MAIN API RETRIES
+|--------------------------------------------------------------------------
+|
+| Reads survive a sleeping or restarting service. Must come after the
+| unwrapping interceptor above — see services/apiRetry.js.
+|
+|--------------------------------------------------------------------------
+*/
+
+installRetry(api);
+
+
+/*
+|--------------------------------------------------------------------------
 | PAYMENT / M-PESA API
 |--------------------------------------------------------------------------
 |
@@ -381,6 +397,21 @@ paymentApi.interceptors.response.use(
   handleUnauthorized
 
 );
+
+
+/*
+|--------------------------------------------------------------------------
+| PAYMENT API RETRIES
+|--------------------------------------------------------------------------
+|
+| The payment service sleeps on the same free tier, so order and checkout
+| READS get the same treatment. Nothing that moves money is retried: see
+| the note at the top of services/apiRetry.js.
+|
+|--------------------------------------------------------------------------
+*/
+
+installRetry(paymentApi);
 
 
 /*

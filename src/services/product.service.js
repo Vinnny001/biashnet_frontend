@@ -9,8 +9,12 @@ export const productService = {
   |--------------------------------------------------------------------------
   */
 
-  list(params = {}) {
-    return api.get("/products", { params });
+  /*
+   * `config` carries an AbortController signal, so a screen that unmounts or
+   * re-sorts can drop the request it no longer wants.
+   */
+  list(params = {}, config = {}) {
+    return api.get("/products", { params, ...config });
   },
 
   /*

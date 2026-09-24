@@ -704,6 +704,21 @@ export const APP_EVENTS = {
   NOTIFICATIONS_UPDATED:
     "biashnet:notifications-updated",
 
+  /*
+   * A read is being retried because the API did not answer in time or
+   * answered from Render's edge while the service boots. Screens listen so
+   * they can say "waking up" instead of leaving the buyer staring at a
+   * spinner. See services/apiRetry.js.
+   */
+  SERVER_WAKING:
+    "biashnet:server-waking",
+
+  /*
+   * Every retried read has settled — succeeded or finally given up.
+   */
+  SERVER_AWAKE:
+    "biashnet:server-awake",
+
 };
 
 

@@ -3,12 +3,14 @@ import FavoriteBorderRoundedIcon from "@mui/icons-material/FavoriteBorderRounded
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import ProductGrid from "../../components/product/ProductGrid";
-import ProductSkeleton from "../../components/product/ProductSkeleton";
+import ProductGrid, {
+  ProductGridSkeleton,
+} from "../../components/product/ProductGrid";
 
 import { wishlistService } from "../../services/wishlist.service";
 import { useWishlist } from "../../hooks/useWishlist";
 import { normalizeList } from "../../utils/helpers";
+import { describeRequestFailure } from "../../utils/errors";
 
 /*
  * The listings this buyer has liked. Only a buyer account has likes, so a
@@ -20,6 +22,7 @@ export default function Wishlist() {
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const load = useCallback(async () => {
     if (!canLike) {
@@ -29,11 +32,23 @@ export default function Wishlist() {
     }
 
     setLoading(true);
+    setError(null);
     try {
       const response = await wishlistService.list();
       setProducts(normalizeList(response));
-    } catch {
-      setProducts([]);
+      setError(null);
+    } catch (requestError) {
+      /*
+       * A request that failed is not an empty wishlist. Telling a buyer they
+       * have liked nothing, when we simply could not ask, loses their list
+       * as far as they can tell.
+       */
+      setError(
+        describeRequestFailure(
+          requestError,
+          "Couldn't load your likes."
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -57,7 +72,20 @@ export default function Wishlist() {
   if (loading) {
     return (
       <Box p={2}>
-        <ProductSkeleton count={8} />
+        <ProductGridSkeleton count={8} />
+      </Box>
+    );
+  }
+
+  if (error && products.length === 0) {
+    return (
+      <Box sx={{ px: { xs: 1, sm: 2 }, py: 2 }}>
+        <ProductGrid
+          products={[]}
+          error={error}
+          errorTitle="Couldn't load your likes"
+          onRetry={load}
+        />
       </Box>
     );
   }

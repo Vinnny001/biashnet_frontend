@@ -1,19 +1,27 @@
 import { Box, CircularProgress, Typography } from "@mui/material";
 import { useEffect, useRef } from "react";
 
-import ProductGrid from "./ProductGrid";
-import ProductSkeleton from "./ProductSkeleton";
+import ProductGrid, { ProductGridSkeleton } from "./ProductGrid";
 
+/*
+ * `loading` is the first request — nothing on screen yet, so the grid itself
+ * shows skeleton cards. `loadingMore` is another screenful being appended,
+ * which belongs under what is already there. Conflating them put a row of
+ * skeletons below an empty grid that was already showing skeletons.
+ */
 export default function InfiniteProductGrid({
   products = [],
   loading = false,
+  loadingMore = false,
+  error = null,
+  onRetry,
   hasMore = false,
   onLoadMore,
 }) {
   const loaderRef = useRef(null);
 
   useEffect(() => {
-    if (!hasMore || loading || !onLoadMore) return;
+    if (!hasMore || loading || loadingMore || !onLoadMore) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -27,29 +35,20 @@ export default function InfiniteProductGrid({
     if (node) observer.observe(node);
 
     return () => observer.disconnect();
-  }, [loading, hasMore, onLoadMore]);
+  }, [loading, loadingMore, hasMore, onLoadMore]);
 
   return (
     <Box sx={{ width: "100%" }}>
-      <ProductGrid products={products} />
+      <ProductGrid
+        products={products}
+        loading={loading}
+        error={error}
+        onRetry={onRetry}
+      />
 
-      {loading && (
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "repeat(2, minmax(0, 1fr))",
-              sm: "repeat(3, minmax(0, 1fr))",
-              md: "repeat(4, minmax(0, 1fr))",
-              lg: "repeat(5, minmax(0, 1fr))",
-            },
-            gap: { xs: 1, sm: 1.5, md: 2 },
-            mt: 1.5,
-          }}
-        >
-          {Array.from({ length: 4 }).map((_, i) => (
-            <ProductSkeleton key={i} />
-          ))}
+      {loadingMore && (
+        <Box sx={{ px: { xs: 0.75, sm: 1.5, md: 2 }, mt: 1.5 }}>
+          <ProductGridSkeleton count={4} />
         </Box>
       )}
 
@@ -62,9 +61,9 @@ export default function InfiniteProductGrid({
           justifyContent: "center",
         }}
       >
-        {hasMore && loading && <CircularProgress size={24} />}
+        {hasMore && loadingMore && <CircularProgress size={24} />}
 
-        {!hasMore && products.length > 0 && (
+        {!hasMore && !loading && products.length > 0 && (
           <Typography
             sx={{
               fontSize: 12,

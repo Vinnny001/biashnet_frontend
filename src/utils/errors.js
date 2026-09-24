@@ -7,6 +7,31 @@ export function getErrorMessage(error, fallback = "Something went wrong.") {
   );
 }
 
+/*
+ * A request that never reached the server has no message of its own worth
+ * showing — "Network Error" and "timeout of 20000ms exceeded" tell a buyer
+ * nothing. Say what happened and, in each case, what they can do about it.
+ */
+export function describeRequestFailure(error, fallback = "Something went wrong.") {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return "You appear to be offline. Reconnect and we'll try again.";
+  }
+
+  if (!error?.response) {
+    if (error?.code === "ECONNABORTED" || error?.code === "ETIMEDOUT") {
+      return "The server is taking longer than usual to answer — it may still be starting up. Please try again.";
+    }
+
+    return "Couldn't reach BIASHNET. Check your connection and try again.";
+  }
+
+  if ([502, 503, 504].includes(error.response.status)) {
+    return "The server is starting up. Please try again in a moment.";
+  }
+
+  return getErrorMessage(error, fallback);
+}
+
 const PRODUCT_GONE_PATTERN = /^Product (\S+) no longer exists\.$/;
 const PRODUCTS_GONE_PATTERN = /^Products (.+) no longer exist\.$/;
 
