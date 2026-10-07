@@ -2,10 +2,15 @@ import { useCallback, useEffect, useState } from "react";
 
 import {
   Alert,
+  AlertTitle,
   Box,
   Button,
   Card,
   CardContent,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Stack,
   Typography,
 } from "@mui/material";
@@ -41,6 +46,25 @@ export default function EditProduct() {
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  /*
+   * Changes waiting on the seller's confirmation, because this listing is
+   * mid-review. Held rather than saved: see handleSubmit.
+   */
+  const [pendingChanges, setPendingChanges] = useState(null);
+
+  const inReview = String(product?.status || "").toLowerCase() === "pending";
+
+  /*
+   * What the automatic check could not pass, when it was the check and not an
+   * admin that held the listing back. Worth showing the seller: these are
+   * specific and usually quick to fix, and they are why the listing is
+   * waiting at all.
+   */
+  const flagged =
+    product?.policyReview?.decision === "flag" && !product.policyReview.failed
+      ? product.policyReview
+      : null;
 
   const fetchProduct = useCallback(async () => {
     if (!id) {
@@ -86,7 +110,22 @@ export default function EditProduct() {
     fetchProduct();
   }, [fetchProduct]);
 
+  /*
+   * A listing that is already being reviewed is not edited silently. Saving
+   * replaces the version that was submitted and starts the review over —
+   * the one already under way is discarded, whatever it was about to decide
+   * — so the seller confirms that before anything is sent.
+   */
   async function handleSubmit(formData) {
+    if (inReview) {
+      setPendingChanges(formData);
+      return;
+    }
+
+    await save(formData);
+  }
+
+  async function save(formData) {
     try {
       setSaving(true);
       setError("");
@@ -115,7 +154,9 @@ export default function EditProduct() {
        */
       setMessage(
         result?.data?.sentForReview
-          ? "Changes saved. Because you changed how this listing looks, it's been sent for review and is hidden from buyers until an admin approves it."
+          ? inReview
+            ? "Changes saved. They've replaced the version that was being reviewed, and the review has started again — your listing stays hidden from buyers until it's approved."
+            : "Changes saved. Because you changed how this listing looks, it's been sent for review and is hidden from buyers until it's approved."
           : "Product updated successfully."
       );
 
@@ -324,6 +365,56 @@ export default function EditProduct() {
       )}
 
       {/* =================================
+          IN REVIEW — editing replaces the submission
+      ================================== */}
+
+      {inReview && (
+        <Alert
+          severity="warning"
+          sx={{ borderRadius: 2 }}
+        >
+          <AlertTitle sx={{ fontWeight: 800 }}>
+            This listing is being reviewed
+          </AlertTitle>
+
+          It's hidden from buyers until it's approved. You don't need to change
+          anything while you wait — but if you save changes, they replace what
+          you sent and the review starts again from the beginning.
+
+          {flagged && (
+            <Box sx={{ mt: 1.5 }}>
+              <Typography sx={{ fontSize: 14, fontWeight: 700 }}>
+                What our checks noticed
+              </Typography>
+
+              <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
+                {flagged.reasons.map((reason, index) => (
+                  <Box component="li" key={index} sx={{ mb: 0.4 }}>
+                    <Typography sx={{ fontSize: 14, fontWeight: 700 }}>
+                      {reason.rule}
+                    </Typography>
+                    {reason.detail && (
+                      <Typography sx={{ fontSize: 14 }}>
+                        {reason.detail}
+                      </Typography>
+                    )}
+                  </Box>
+                ))}
+              </Box>
+
+              <Typography
+                sx={{ fontSize: 13, mt: 0.75, color: "text.secondary" }}
+              >
+                Our team still has the final say, so you may not need to change
+                anything. Fixing these first usually gets a listing approved
+                sooner.
+              </Typography>
+            </Box>
+          )}
+        </Alert>
+      )}
+
+      {/* =================================
           REJECTED — the admin's reason
       ================================== */}
 
@@ -398,6 +489,56 @@ export default function EditProduct() {
           </Box>
         </CardContent>
       </Card>
+
+      {/* =================================
+          REPLACE WHAT'S UNDER REVIEW?
+      ================================== */}
+
+      <Dialog
+        open={Boolean(pendingChanges)}
+        onClose={saving ? undefined : () => setPendingChanges(null)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle fontWeight={800}>
+          Replace the version being reviewed?
+        </DialogTitle>
+
+        <DialogContent>
+          <Typography color="text.secondary">
+            This listing is already being reviewed. Saving now replaces what
+            you sent with what's on screen, and the review starts again — so
+            it may take longer than if you wait.
+          </Typography>
+
+          <Typography color="text.secondary" sx={{ mt: 1.5 }}>
+            It stays hidden from buyers either way until it's approved.
+          </Typography>
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setPendingChanges(null)}
+            disabled={saving}
+          >
+            Keep waiting
+          </Button>
+
+          <Button
+            variant="contained"
+            color="warning"
+            disabled={saving}
+            onClick={() => {
+              const changes = pendingChanges;
+              setPendingChanges(null);
+              save(changes);
+            }}
+            sx={{ fontWeight: 700 }}
+          >
+            Replace and review again
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }

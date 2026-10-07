@@ -73,17 +73,30 @@ function orderIdOf(notification) {
 
 /*
  * The action button for a notification, if there's somewhere useful to go.
- * A listing awaiting review opens the admin products page; a seller's
- * rejected listing opens its editor so they can fix it, and an approved
- * one opens the live listing. For orders, only buyers have a per-order
- * page; a seller's orders live on their orders list.
+ * A listing awaiting review opens the admin products page for an admin and
+ * the listing's own editor for its seller; a seller's rejected listing opens
+ * its editor so they can fix it, and an approved one opens the live listing.
+ * For orders, only buyers have a per-order page; a seller's orders live on
+ * their orders list.
  */
 function actionFor(notification, audience) {
+  const productId = notification.productId || notification.data?.productId;
+
   if (notification.type === "PRODUCT_PENDING_REVIEW") {
+    /*
+     * The same type reaches two audiences: an admin who has to review the
+     * listing, and the seller being told theirs is waiting. Sending the
+     * seller to the admin products page would be sending them somewhere
+     * they can't go — their listing's editor is where they can act.
+     */
+    if (audience === "SELLER") {
+      return productId
+        ? { to: `/seller/products/${productId}/edit`, label: "Open listing" }
+        : { to: "/seller/products", label: "My listings" };
+    }
+
     return { to: "/admin/products", label: "Review listing" };
   }
-
-  const productId = notification.productId || notification.data?.productId;
 
   if (notification.type === "PRODUCT_REJECTED" && productId) {
     return { to: `/seller/products/${productId}/edit`, label: "Fix listing" };
