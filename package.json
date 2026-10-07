@@ -1,6 +1,6 @@
 {
   "name": "biashnet-frontend",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Frontend SPA for Biashnet - React, Vite, React Router DOM, Axios",
   "type": "module",
   "scripts": {
